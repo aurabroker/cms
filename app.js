@@ -1,17 +1,46 @@
 // =============================================================================
 //  KONFIGURACJA SUPABASE
 //  Klucz anon jest publiczny z założenia — bezpieczeństwo zapewniają
-//  polityki RLS po stronie bazy danych (nie ten plik).
+//  polityki RLS po stronie bazy danych.
 // =============================================================================
 const SB_URL = 'https://kukvgsjrmrqtzhkszzum.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a3Znc2pybXJxdHpoa3N6enVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTI0NzYsImV4cCI6MjA4ODQ4ODQ3Nn0.wOB-4CJTcRksSUY7WD7CXEccTKNxPIVF8AT8hczS5zY';
-
 const SB_CLIENT = supabase.createClient(SB_URL, SB_KEY);
 
-// Stan aplikacji
 let currentRole = 'viewer';
 let currentUser = null;
 let quillInstance = null;
+
+// Mapowanie platform na klasy CSS domain-tag
+const PLAT_CLASS = {
+  'AuraBenefits':     'd-benefits',
+  'AuraConsulting.pl':'d-aura',
+  'Grupowe.pro':      'd-grupowe',
+  'UtrataDochodu.pl': 'd-utrata',
+  'Gwarancje.pro':    'd-gwar',
+  'Idzik.org.pl':     'd-idzik',
+};
+
+const ALL_PLATFORMS = [
+  { id: 'plat_aurabenefits',   value: 'AuraBenefits' },
+  { id: 'plat_auraconsulting', value: 'AuraConsulting.pl' },
+  { id: 'plat_grupowe',        value: 'Grupowe.pro' },
+  { id: 'plat_utratadochodu',  value: 'UtrataDochodu.pl' },
+  { id: 'plat_gwarancje',      value: 'Gwarancje.pro' },
+  { id: 'plat_idzik',          value: 'Idzik.org.pl' },
+];
+
+const PAGE_TITLES = {
+  blog:      'Baza Wiedzy HR',
+  article:   'Artykuł',
+  dashboard: 'Pulpit',
+  articles:  'Artykuły',
+  social:    'Social Media',
+  analytics: 'Analityka',
+  users:     'Użytkownicy',
+};
+
+const ADMIN_PAGES = ['dashboard', 'articles', 'social', 'analytics', 'users'];
 
 
 // =============================================================================
@@ -29,26 +58,21 @@ function safeHtml(dirty) {
   return DOMPurify.sanitize(dirty || '', {
     FORCE_BODY: true,
     ADD_TAGS: ['iframe'],
-    ADD_ATTR: ['allowfullscreen', 'frameborder', 'allow', 'src']
+    ADD_ATTR: ['allowfullscreen', 'frameborder', 'allow', 'src'],
   });
 }
 
 function escapeHtml(str) {
   return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
-
-// Wyciąga ID filmu z dowolnego formatu URL YouTube
 function extractYouTubeId(url) {
   if (!url) return null;
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
   ];
   for (const re of patterns) {
     const m = url.match(re);
@@ -59,8 +83,12 @@ function extractYouTubeId(url) {
 
 function youtubeThumbnail(url) {
   const id = extractYouTubeId(url);
-  if (!id) return null;
-  return 'https://img.youtube.com/vi/' + id + '/maxresdefault.jpg';
+  return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : null;
+}
+
+function platBadge(platform) {
+  const cls = PLAT_CLASS[platform] || 'd-aura';
+  return `<span class="domain-tag ${cls}">${escapeHtml(platform)}</span>`;
 }
 
 
@@ -91,9 +119,20 @@ async function checkAuthAndUpdateUI() {
 
 function updateNavForRole() {
   const isAdmin = currentRole === 'admin';
-  document.getElementById('adminTabBtn').classList.toggle('hidden', !isAdmin);
-  document.getElementById('loginTabBtn').classList.toggle('hidden', isAdmin);
-  document.getElementById('logoutBtn').classList.toggle('hidden', !isAdmin);
+
+  document.querySelectorAll('.admin-only').forEach(el =>
+    el.classList.toggle('hidden', !isAdmin)
+  );
+  document.getElementById('loginSideBtn').classList.toggle('hidden', isAdmin);
+  document.getElementById('logoutSideBtn').classList.toggle('hidden', !isAdmin);
+
+  const userEl = document.getElementById('topbarUser');
+  if (isAdmin && currentUser) {
+    userEl.textContent = currentUser.email;
+    userEl.classList.remove('hidden');
+  } else {
+    userEl.classList.add('hidden');
+  }
 }
 
 async function doLogin() {
@@ -119,7 +158,7 @@ async function doLogin() {
 
   closeLoginScreen();
   await checkAuthAndUpdateUI();
-  if (currentRole === 'admin') switchTab('admin');
+  if (currentRole === 'admin') navTo('dashboard');
 }
 
 async function doLogout() {
@@ -127,65 +166,78 @@ async function doLogout() {
   currentRole = 'viewer';
   currentUser = null;
   updateNavForRole();
-  switchTab('home');
+  navTo('blog');
 }
 
-function showLoginScreen() {
-  document.getElementById('loginScreen').classList.remove('hidden');
-}
-
+function showLoginScreen()  { document.getElementById('loginScreen').classList.remove('hidden'); }
 function closeLoginScreen() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('loginError').classList.add('hidden');
-}
-
-function requireAdminThenSwitch() {
-  if (currentRole !== 'admin') { showLoginScreen(); return; }
-  switchTab('admin');
 }
 
 
 // =============================================================================
 //  NAWIGACJA / ROUTING
 // =============================================================================
-function switchTab(id, skipHash = false) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.classList.remove('text-brand-purple', 'bg-purple-50');
-    b.classList.add('text-slate-500');
-  });
-
-  const panel = document.getElementById('tab-' + id);
-  if (panel) panel.classList.add('active');
-
-  const btn = document.querySelector(`.tab-btn[data-tab="${id}"]`);
-  if (btn) {
-    btn.classList.add('text-brand-purple', 'bg-purple-50');
-    btn.classList.remove('text-slate-500');
+function navTo(page, skipHash = false) {
+  if (ADMIN_PAGES.includes(page) && currentRole !== 'admin') {
+    showLoginScreen();
+    return;
   }
 
-  if (id === 'blog')  loadPublishedArticles();
-  if (id === 'admin') {
-    if (currentRole !== 'admin') { switchTab('home'); return; }
-    loadAdminArticles();
-  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-  if (!skipHash) history.pushState(null, null, '#' + id);
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+
+  const navEl = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (navEl) navEl.classList.add('active');
+
+  document.getElementById('topbarTitle').textContent = PAGE_TITLES[page] || page;
+
+  if (page === 'blog')      loadPublishedArticles();
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'articles')  loadAdminArticles();
+
+  if (!skipHash) history.pushState(null, null, '#' + page);
 }
 
 async function handleHashChange() {
   const hash = window.location.hash.replace('#', '');
+
   if (hash.startsWith('article-')) {
     await openArticle(hash.replace('article-', ''), true);
-  } else if (hash && document.getElementById('tab-' + hash)) {
-    if (hash === 'admin' && currentRole !== 'admin') switchTab('home', true);
-    else switchTab(hash, true);
+  } else if (hash && document.getElementById('page-' + hash)) {
+    navTo(hash, true);
   } else {
-    switchTab('home', true);
+    navTo('blog', true);
   }
 }
 
 window.addEventListener('hashchange', handleHashChange);
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+}
+
+
+// =============================================================================
+//  DARK MODE
+// =============================================================================
+function initThemeToggle() {
+  const btn = document.getElementById('btn-theme');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const isDark = document.body.dataset.theme === 'dark';
+    document.body.dataset.theme = isDark ? '' : 'dark';
+    const iconEl = btn.querySelector('i');
+    if (iconEl) {
+      iconEl.setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+      lucide.createIcons();
+    }
+  });
+}
 
 
 // =============================================================================
@@ -202,10 +254,52 @@ function initQuill() {
         ['blockquote'],
         [{ list: 'ordered' }, { list: 'bullet' }],
         ['link', 'image', 'video'],
-        ['clean']
-      ]
-    }
+        ['clean'],
+      ],
+    },
   });
+}
+
+
+// =============================================================================
+//  DASHBOARD — KPI + ostatnie artykuły
+// =============================================================================
+async function loadDashboard() {
+  if (currentRole !== 'admin') return;
+
+  const [{ count: published }, { count: drafts }] = await Promise.all([
+    SB_CLIENT.from('aura_articles').select('id', { count: 'exact', head: true }).eq('status', 'published'),
+    SB_CLIENT.from('aura_articles').select('id', { count: 'exact', head: true }).eq('status', 'draft'),
+  ]);
+
+  document.getElementById('kpi-published').textContent = published ?? '—';
+  document.getElementById('kpi-drafts').textContent = drafts ?? '—';
+
+  const { data } = await SB_CLIENT
+    .from('aura_articles')
+    .select('id, title, platforms, status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const tbody = document.getElementById('dashboard-recent-articles');
+
+  if (!data || !data.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Brak artykułów.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(art => {
+    const plats = (art.platforms || []).map(platBadge).join(' ');
+    const badge = art.status === 'published'
+      ? '<span class="badge badge-success">Opublikowano</span>'
+      : '<span class="badge badge-muted">Szkic</span>';
+    return `<tr>
+      <td><strong>${escapeHtml(art.title)}</strong></td>
+      <td>${plats}</td>
+      <td>${badge}</td>
+      <td>${new Date(art.created_at).toLocaleDateString('pl-PL')}</td>
+    </tr>`;
+  }).join('');
 }
 
 
@@ -219,23 +313,30 @@ async function openArticle(id, skipHashChange = false) {
     .eq('id', id)
     .single();
 
-  if (!data || error) { alert('Nie znaleziono artykułu.'); switchTab('blog'); return; }
+  if (!data || error) {
+    alert('Nie znaleziono artykułu.');
+    navTo('blog');
+    return;
+  }
 
   document.getElementById('amTitle').textContent = data.title;
   document.getElementById('amDate').textContent  =
     `Opublikowano: ${new Date(data.published_at || data.created_at).toLocaleString('pl-PL')}`;
-
   document.getElementById('amContent').innerHTML = safeHtml(data.content);
   document.getElementById('amTags').innerHTML = (data.tags || [])
-    .map(t => `<span class="bg-indigo-50 border border-indigo-100 text-brand-purple text-xs px-3 py-1 rounded-lg font-black uppercase tracking-wider">${escapeHtml(t)}</span>`)
+    .map(t => `<span class="article-tag">${escapeHtml(t)}</span>`)
     .join('');
 
-  switchTab('article', skipHashChange);
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-article').classList.add('active');
+  document.getElementById('topbarTitle').textContent = 'Artykuł';
+
   window.scrollTo(0, 0);
   if (!skipHashChange) history.pushState(null, null, '#article-' + id);
 }
 
-function closeArticle() { switchTab('blog'); }
+function closeArticle() { navTo('blog'); }
 
 function copyArticleLink() {
   navigator.clipboard.writeText(window.location.href)
@@ -249,7 +350,7 @@ function copyArticleLink() {
 // =============================================================================
 async function loadPublishedArticles() {
   const grid = document.getElementById('blogGrid');
-  grid.innerHTML = '<div class="col-span-full py-20 text-center text-slate-400">Pobieranie artykułów...</div>';
+  grid.innerHTML = '<div class="empty-state">Pobieranie artykułów...</div>';
 
   const { data, error } = await SB_CLIENT
     .from('aura_articles')
@@ -259,186 +360,173 @@ async function loadPublishedArticles() {
     .order('published_at', { ascending: false });
 
   if (error || !data) {
-    grid.innerHTML = '<div class="col-span-full text-center text-red-500 py-10">Błąd połączenia z bazą danych.</div>';
+    grid.innerHTML = '<div class="empty-state empty-state-error">Błąd połączenia z bazą danych.</div>';
     return;
   }
 
   if (data.length === 0) {
-    grid.innerHTML = `
-      <div class="col-span-full text-center text-slate-400 py-10 border-2 border-dashed border-slate-200 rounded-3xl">
-        Brak opublikowanych artykułów dla portalu AuraBenefits.
-      </div>`;
+    grid.innerHTML = '<div class="empty-state">Brak opublikowanych artykułów.</div>';
     return;
   }
 
   grid.innerHTML = data.map(art => {
     const thumb = youtubeThumbnail(art.thumbnail_url);
     const thumbHtml = thumb
-      ? `<div class="article-thumb" style="background-image:url('${thumb}')">
-           <div class="article-thumb-overlay"></div>
+      ? `<div class="blog-card-thumb" style="background-image:url('${thumb}')">
+           <div class="blog-card-thumb-overlay"></div>
          </div>`
       : '';
+
     const tagsHtml = (art.tags || []).slice(0, 2).map(t =>
-      `<span class="bg-indigo-50 text-brand-purple text-[10px] px-2 py-1 rounded font-black uppercase tracking-wider">${escapeHtml(t)}</span>`
-    ).join('') + (art.tags?.length > 2 ? `<span class="text-slate-400 text-xs font-bold">...</span>` : '');
+      `<span class="badge badge-primary">${escapeHtml(t)}</span>`
+    ).join('') + (art.tags?.length > 2
+      ? `<span style="font-size:11px;color:var(--color-text-faint)">+${art.tags.length - 2}</span>`
+      : '');
 
     return `
-    <div class="glass-card rounded-3xl shadow-sm hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer border border-slate-200 flex flex-col h-full overflow-hidden"
-         onclick="openArticle('${escapeHtml(String(art.id))}')">
-      ${thumbHtml}
-      <div class="p-8 flex flex-col flex-grow">
-        <div class="flex gap-2 mb-4">${tagsHtml}</div>
-        <h3 class="text-xl font-black text-brand-navy mb-3 line-clamp-3 leading-snug">${escapeHtml(art.title)}</h3>
-        <p class="text-slate-500 text-sm mb-6 flex-grow line-clamp-3">${escapeHtml(art.excerpt || '')}</p>
-        <div class="border-t border-slate-100 pt-4 flex justify-between items-center text-xs font-bold text-slate-400">
-          <span>${new Date(art.published_at).toLocaleDateString('pl-PL')}</span>
-          <span class="text-brand-purple">Czytaj całość →</span>
+      <div class="blog-card" onclick="openArticle('${escapeHtml(String(art.id))}')">
+        ${thumbHtml}
+        <div class="blog-card-body">
+          <div class="blog-card-tags">${tagsHtml}</div>
+          <div class="blog-card-title">${escapeHtml(art.title)}</div>
+          <div class="blog-card-excerpt">${escapeHtml(art.excerpt || '')}</div>
+          <div class="blog-card-footer">
+            <span>${new Date(art.published_at).toLocaleDateString('pl-PL')}</span>
+            <span class="blog-card-cta">Czytaj →</span>
+          </div>
         </div>
-      </div>
-    </div>`;
+      </div>`;
   }).join('');
 }
 
 
 // =============================================================================
-//  PANEL CMS ADMIN
+//  ADMIN — TABELA ARTYKUŁÓW
 // =============================================================================
 async function loadAdminArticles() {
   if (currentRole !== 'admin') return;
-  const list = document.getElementById('adminArticlesList');
 
-  const { data, error } = await SB_CLIENT
-    .from('aura_articles')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const tbody = document.getElementById('adminArticlesList');
+  tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Ładowanie...</td></tr>`;
+
+  let query = SB_CLIENT.from('aura_articles').select('*').order('created_at', { ascending: false });
+
+  const filterStatus   = document.getElementById('filterStatus')?.value;
+  const filterPlatform = document.getElementById('filterPlatform')?.value;
+  if (filterStatus)   query = query.eq('status', filterStatus);
+  if (filterPlatform) query = query.contains('platforms', [filterPlatform]);
+
+  const { data, error } = await query;
 
   if (error || !data) {
-    list.innerHTML = `<div class="text-red-500 p-4">Błąd bazy: ${escapeHtml(error?.message || '')}</div>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-state empty-state-error">Błąd: ${escapeHtml(error?.message || '')}</td></tr>`;
     return;
   }
 
   if (data.length === 0) {
-    list.innerHTML = `
-      <div class="text-center text-slate-400 py-10 text-sm border-2 border-dashed border-slate-100 rounded-2xl">
-        Nie napisałeś jeszcze żadnego artykułu.
-      </div>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Brak artykułów spełniających kryteria.</td></tr>`;
     return;
   }
 
-  list.innerHTML = data.map(art => {
+  tbody.innerHTML = data.map(art => {
+    const safeId = escapeHtml(String(art.id));
     const isDraft = art.status === 'draft';
-    const safeId  = escapeHtml(String(art.id));
+    const badge = isDraft
+      ? '<span class="badge badge-muted">Szkic</span>'
+      : '<span class="badge badge-success">Opublikowano</span>';
+    const plats = (art.platforms || []).map(platBadge).join(' ');
+    const unpublishBtn = !isDraft
+      ? `<button class="btn-icon" onclick="unpublishArticle('${safeId}')" title="Cofnij publikację">
+           <i data-lucide="eye-off" width="15" height="15"></i>
+         </button>`
+      : '';
 
-    const statusBadge = isDraft
-      ? `<span class="bg-slate-100 text-slate-600 text-[10px] font-black uppercase px-2.5 py-1 rounded">Szkic</span>`
-      : `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase px-2.5 py-1 rounded">Opublikowano</span>`;
-
-    const platBadges = (art.platforms || ['AuraBenefits']).map(p => {
-      const map = {
-        'Grupowe.pro':       'bg-blue-100 text-blue-700',
-        'UtrataDochodu.pl':  'bg-teal-100 text-teal-700',
-        'AuraConsulting.pl': 'bg-amber-100 text-amber-700',
-      };
-      const cls = map[p] || 'bg-purple-100 text-brand-purple';
-      return `<span class="${cls} text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">${escapeHtml(p)}</span>`;
-    }).join(' ');
-
-    return `
-      <div class="bg-slate-50 border border-slate-200 p-6 rounded-3xl flex flex-col xl:flex-row justify-between lg:items-center gap-6 hover:border-brand-purple/40 transition-colors">
-        <div class="flex-grow">
-          <div class="flex items-center gap-3 mb-2 flex-wrap">
-            ${statusBadge}
-            <span class="text-slate-300">|</span>
-            ${platBadges}
-            <span class="text-xs text-slate-400 ml-auto">${new Date(art.created_at).toLocaleDateString('pl-PL')}</span>
-          </div>
-          <h4 class="font-bold text-brand-navy text-xl leading-snug">${escapeHtml(art.title)}</h4>
-          <p class="text-sm text-slate-500 mt-2 line-clamp-1">${escapeHtml(art.excerpt || 'Brak zajawki...')}</p>
-        </div>
-        <div class="flex flex-wrap gap-2 shrink-0">
-          <button onclick="openArticle('${safeId}')"
-                  class="bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs shadow-sm transition-colors">
-            Podgląd
-          </button>
-          <button onclick="editArticleInCms('${safeId}')"
-                  class="bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple font-bold px-4 py-2.5 rounded-xl text-xs transition-colors">
-            ✏️ Edytuj
-          </button>
-          ${!isDraft
-            ? `<button onclick="unpublishArticle('${safeId}')"
-                       class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs transition-colors">
-                 Cofnij publikację
-               </button>`
-            : ''}
-          <button onclick="deleteArticle('${safeId}')"
-                  class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2.5 rounded-xl text-xs transition-colors">
-            Usuń
-          </button>
-        </div>
-      </div>`;
+    return `<tr>
+      <td>
+        <strong>${escapeHtml(art.title)}</strong><br>
+        <span class="td-meta">${escapeHtml((art.excerpt || '').slice(0, 80))}${(art.excerpt || '').length > 80 ? '…' : ''}</span>
+      </td>
+      <td>${plats}</td>
+      <td>${badge}</td>
+      <td>${new Date(art.created_at).toLocaleDateString('pl-PL')}</td>
+      <td class="td-actions">
+        <button class="btn-icon" onclick="openArticle('${safeId}')" title="Podgląd">
+          <i data-lucide="eye" width="15" height="15"></i>
+        </button>
+        <button class="btn-icon" onclick="editArticleInCms('${safeId}')" title="Edytuj">
+          <i data-lucide="edit" width="15" height="15"></i>
+        </button>
+        ${unpublishBtn}
+        <button class="btn-icon btn-icon-danger" onclick="deleteArticle('${safeId}')" title="Usuń">
+          <i data-lucide="trash-2" width="15" height="15"></i>
+        </button>
+      </td>
+    </tr>`;
   }).join('');
+
+  lucide.createIcons();
 }
 
+
+// =============================================================================
+//  CMS MODAL — otwieranie / edycja
+// =============================================================================
 function openNewArticleModal() {
   if (currentRole !== 'admin') return;
+
   document.getElementById('cmsModalTitle').textContent = 'Tworzenie Nowego Artykułu';
-  document.getElementById('cmsId').value      = '';
-  document.getElementById('cmsTitle').value   = '';
-  document.getElementById('cmsExcerpt').value = '';
-  document.getElementById('cmsTags').value    = '';
+  document.getElementById('cmsId').value        = '';
+  document.getElementById('cmsTitle').value     = '';
+  document.getElementById('cmsExcerpt').value   = '';
+  document.getElementById('cmsTags').value      = '';
   document.getElementById('cmsThumbnail').value = '';
-  document.getElementById('plat_aurabenefits').checked  = true;
-  document.getElementById('plat_grupowe').checked        = false;
-  document.getElementById('plat_utratadochodu').checked  = false;
-  document.getElementById('plat_auraconsulting').checked = false;
+  document.getElementById('thumbPreview').classList.add('hidden');
+  document.getElementById('thumbPreview').style.backgroundImage = '';
+
+  ALL_PLATFORMS.forEach(p => {
+    document.getElementById(p.id).checked = (p.value === 'AuraBenefits');
+  });
+
   quillInstance.root.innerHTML = '';
-  document.getElementById('cmsModal').classList.remove('hidden');
-  document.getElementById('cmsModal').classList.add('flex');
+  openModal('modal-article');
 }
 
 async function editArticleInCms(id) {
   if (currentRole !== 'admin') return;
+
   const { data } = await SB_CLIENT.from('aura_articles').select('*').eq('id', id).single();
   if (!data) return;
 
   document.getElementById('cmsModalTitle').textContent = 'Edycja Artykułu';
-  document.getElementById('cmsId').value      = id;
-  document.getElementById('cmsTitle').value   = data.title;
-  document.getElementById('cmsExcerpt').value = data.excerpt || '';
-  document.getElementById('cmsTags').value    = (data.tags || []).join(', ');
+  document.getElementById('cmsId').value        = id;
+  document.getElementById('cmsTitle').value     = data.title;
+  document.getElementById('cmsExcerpt').value   = data.excerpt || '';
+  document.getElementById('cmsTags').value      = (data.tags || []).join(', ');
   document.getElementById('cmsThumbnail').value = data.thumbnail_url || '';
+  previewThumbnail(data.thumbnail_url || '');
 
   const platforms = data.platforms || ['AuraBenefits'];
-  document.getElementById('plat_aurabenefits').checked  = platforms.includes('AuraBenefits');
-  document.getElementById('plat_grupowe').checked        = platforms.includes('Grupowe.pro');
-  document.getElementById('plat_utratadochodu').checked  = platforms.includes('UtrataDochodu.pl');
-  document.getElementById('plat_auraconsulting').checked = platforms.includes('AuraConsulting.pl');
+  ALL_PLATFORMS.forEach(p => {
+    document.getElementById(p.id).checked = platforms.includes(p.value);
+  });
 
   quillInstance.root.innerHTML = data.content;
-  document.getElementById('cmsModal').classList.remove('hidden');
-  document.getElementById('cmsModal').classList.add('flex');
-}
-
-function closeCmsModal() {
-  document.getElementById('cmsModal').classList.add('hidden');
-  document.getElementById('cmsModal').classList.remove('flex');
+  openModal('modal-article');
 }
 
 async function saveArticle(desiredStatus) {
   if (currentRole !== 'admin') { alert('Brak uprawnień.'); return; }
 
-  const id          = document.getElementById('cmsId').value;
-  const title       = document.getElementById('cmsTitle').value.trim();
-  const excerpt     = document.getElementById('cmsExcerpt').value.trim();
-  const tagsStr     = document.getElementById('cmsTags').value.trim();
-  const contentHtml = quillInstance.root.innerHTML;
+  const id           = document.getElementById('cmsId').value;
+  const title        = document.getElementById('cmsTitle').value.trim();
+  const excerpt      = document.getElementById('cmsExcerpt').value.trim();
+  const tagsStr      = document.getElementById('cmsTags').value.trim();
+  const contentHtml  = quillInstance.root.innerHTML;
   const thumbnailUrl = document.getElementById('cmsThumbnail').value.trim();
 
-  const platforms = [];
-  if (document.getElementById('plat_aurabenefits').checked)  platforms.push('AuraBenefits');
-  if (document.getElementById('plat_grupowe').checked)       platforms.push('Grupowe.pro');
-  if (document.getElementById('plat_utratadochodu').checked) platforms.push('UtrataDochodu.pl');
-  if (document.getElementById('plat_auraconsulting').checked) platforms.push('AuraConsulting.pl');
+  const platforms = ALL_PLATFORMS
+    .filter(p => document.getElementById(p.id).checked)
+    .map(p => p.value);
 
   if (!platforms.length)             return alert('Wybierz przynajmniej jedno miejsce publikacji.');
   if (!title)                        return alert('Podaj tytuł artykułu.');
@@ -451,7 +539,7 @@ async function saveArticle(desiredStatus) {
     tags, platforms,
     thumbnail_url: thumbnailUrl || null,
     status: desiredStatus,
-    ai_generated: false
+    ai_generated: false,
   };
   if (desiredStatus === 'published') payload.published_at = new Date().toISOString();
 
@@ -460,10 +548,9 @@ async function saveArticle(desiredStatus) {
     : await SB_CLIENT.from('aura_articles').insert([payload]);
 
   if (!error) {
-    closeCmsModal();
+    closeModal('modal-article');
+    alert(desiredStatus === 'published' ? 'Artykuł opublikowany!' : 'Szkic zapisany.');
     loadAdminArticles();
-    if (desiredStatus === 'published') { alert('Artykuł opublikowany!'); switchTab('blog'); }
-    else alert('Szkic zapisany.');
   } else {
     alert('Błąd zapisu: ' + error.message);
   }
@@ -482,20 +569,6 @@ async function deleteArticle(id) {
   loadAdminArticles();
 }
 
-
-// =============================================================================
-//  INIT
-// =============================================================================
-window.onload = async () => {
-  initQuill();
-  await checkAuthAndUpdateUI();
-  handleHashChange();
-};
-
-
-// =============================================================================
-//  PODGLĄD MINIATURKI W FORMULARZU CMS
-// =============================================================================
 function previewThumbnail(url) {
   const el = document.getElementById('thumbPreview');
   const thumb = youtubeThumbnail(url);
@@ -507,3 +580,29 @@ function previewThumbnail(url) {
     el.classList.add('hidden');
   }
 }
+
+
+// =============================================================================
+//  MODALS — generyczne
+// =============================================================================
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+
+// =============================================================================
+//  INIT
+// =============================================================================
+window.onload = async () => {
+  lucide.createIcons();
+  initThemeToggle();
+  initQuill();
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  await checkAuthAndUpdateUI();
+  handleHashChange();
+};
