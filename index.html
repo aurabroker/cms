@@ -1,327 +1,671 @@
 <!DOCTYPE html>
-<html lang="pl" class="bg-slate-50 antialiased">
+<html lang="pl">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
         content="
           default-src 'self';
           script-src 'self' 'unsafe-inline'
-            https://cdn.tailwindcss.com
             https://cdn.jsdelivr.net
+            https://cdnjs.cloudflare.com
             https://cdn.quilljs.com
-            https://cdnjs.cloudflare.com;
+            https://unpkg.com;
           style-src 'self' 'unsafe-inline'
             https://fonts.googleapis.com
-            https://cdn.quilljs.com
-            https://cdn.jsdelivr.net;
+            https://cdn.quilljs.com;
           font-src https://fonts.gstatic.com;
-          img-src 'self' data: blob: https://www.transparenttextures.com https://img.youtube.com;
+          img-src 'self' data: blob: https://img.youtube.com;
           connect-src 'self' https://kukvgsjrmrqtzhkszzum.supabase.co;
           frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com;
           object-src 'none';
         ">
-
-  <title>AuraBenefits — Centrum Zarządzania Benefitami</title>
-
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-  <!-- Quill CSS -->
+  <title>AuraHUB — System CMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'brand-navy':   '#0f172a',
-            'brand-purple': '#6366f1',
-            'brand-pink':   '#e11d48',
-            'brand-blue':   '#1e3a8a'
-          },
-          fontFamily: { sans: ['Inter', 'sans-serif'] }
-        }
-      }
-    }
-  </script>
-
-  <!-- Style własne -->
   <link rel="stylesheet" href="./style.css">
 </head>
+<body>
 
-<body class="text-slate-800 min-h-screen flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-
-<!-- ── Ekran logowania ───────────────────────────────────────────────────── -->
-<div id="loginScreen"
-     class="fixed inset-0 z-[100] flex items-center justify-center hidden"
-     style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);">
-  <div class="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md mx-4">
-    <div class="flex items-center gap-3 mb-8">
-      <div class="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-navy rounded-xl shadow-lg flex items-center justify-center text-white font-black text-xl">A</div>
-      <div class="text-2xl font-black tracking-tight text-brand-navy">
-        Aura<span class="text-brand-purple">Benefits</span>
-        <span class="text-base font-medium text-slate-400">CMS</span>
+<!-- ── EKRAN LOGOWANIA ───────────────────────────────────────────────────────── -->
+<div id="loginScreen" class="login-screen hidden">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-logo">A</div>
+      <div>
+        <div class="login-title">AuraHUB <span class="login-cms-label">CMS</span></div>
       </div>
     </div>
-    <p class="text-sm text-slate-500 mb-6">Zaloguj się, aby uzyskać dostęp do panelu redaktora.</p>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">E-mail</label>
-        <input type="email" id="loginEmail" autocomplete="email"
-               class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-brand-purple text-sm"
-               placeholder="admin@auraconsulting.pl">
-      </div>
-      <div>
-        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Hasło</label>
-        <input type="password" id="loginPassword" autocomplete="current-password"
-               class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-brand-purple text-sm"
-               placeholder="••••••••"
-               onkeydown="if(event.key==='Enter') doLogin()">
-      </div>
+    <p class="login-hint">Zaloguj się, aby uzyskać dostęp do panelu redaktora.</p>
+    <div class="form-field">
+      <label class="form-label">E-mail</label>
+      <input type="email" id="loginEmail" autocomplete="email" class="form-input"
+             placeholder="admin@auraconsulting.pl">
     </div>
-    <p id="loginError" class="text-red-500 text-xs mt-3 hidden font-medium"></p>
-    <button onclick="doLogin()" id="loginBtn"
-            class="mt-6 w-full bg-brand-purple hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all active:scale-95">
+    <div class="form-field">
+      <label class="form-label">Hasło</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" class="form-input"
+             placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <p id="loginError" class="login-error hidden"></p>
+    <button onclick="doLogin()" id="loginBtn" class="btn btn-primary" style="width:100%;margin-top:16px">
       Zaloguj się
     </button>
-    <button onclick="closeLoginScreen()"
-            class="mt-3 w-full text-slate-400 hover:text-slate-600 text-sm font-medium py-2 transition-colors">
+    <button onclick="closeLoginScreen()" class="btn btn-ghost" style="width:100%;margin-top:8px">
       Anuluj — wróć do portalu
     </button>
   </div>
 </div>
 
-<!-- ── Header ────────────────────────────────────────────────────────────── -->
-<header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
-  <div class="max-w-[1200px] mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
-    <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('home')">
-      <div class="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-navy rounded-xl shadow-lg flex items-center justify-center text-white font-black text-xl">A</div>
-      <div class="text-2xl font-black tracking-tight text-brand-navy">Aura<span class="text-brand-purple">Benefits</span></div>
-    </div>
-    <nav class="flex gap-2 flex-wrap justify-center">
-      <button data-tab="home" onclick="switchTab('home')"
-              class="tab-btn active px-4 py-2 text-sm font-bold rounded-lg text-brand-purple bg-purple-50 transition-colors">
-        Strona Główna
-      </button>
-      <button data-tab="blog" onclick="switchTab('blog')"
-              class="tab-btn px-4 py-2 text-sm font-bold rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-        Baza Wiedzy HR
-      </button>
-      <button id="adminTabBtn" onclick="requireAdminThenSwitch()"
-              class="tab-btn hidden px-4 py-2 text-sm font-bold rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-        📝 CMS (Zarządzanie)
-      </button>
-      <button id="loginTabBtn" onclick="showLoginScreen()"
-              class="px-4 py-2 text-sm font-bold rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-        🔒 Panel redaktora
-      </button>
-      <button id="logoutBtn" onclick="doLogout()"
-              class="hidden px-4 py-2 text-sm font-bold rounded-lg text-red-400 hover:bg-red-50 transition-colors">
-        Wyloguj
-      </button>
-    </nav>
-  </div>
-</header>
+<!-- ── APP CONTAINER ─────────────────────────────────────────────────────────── -->
+<div class="app-container">
 
-<!-- ── Main ──────────────────────────────────────────────────────────────── -->
-<main class="flex-grow max-w-[1200px] mx-auto w-full px-6 py-12 relative">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand" onclick="navTo('blog')" style="cursor:pointer">
+      <div class="brand-logo">A</div>
+      <span>Aura<span class="brand-sub">HUB</span></span>
+    </div>
 
-  <!-- Strona główna -->
-  <div id="tab-home" class="tab-panel active">
-    <div class="text-center max-w-3xl mx-auto mb-16 mt-8">
-      <h1 class="text-4xl md:text-5xl font-black text-brand-navy mb-4 tracking-tight">
-        Jeden ekosystem.<br>
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-pink">Lepsze decyzje benefitowe.</span>
-      </h1>
-      <p class="text-lg text-slate-500 font-medium">Witaj w centrum zarządzania ubezpieczeniami grupowymi. Wybierz aplikację lub zapoznaj się z Bazą Wiedzy.</p>
+    <div class="nav-section">
+      <div class="nav-label">Publiczne</div>
+      <button class="nav-item active" data-page="blog" onclick="navTo('blog')">
+        <i data-lucide="book-open" width="17" height="17"></i> Baza Wiedzy HR
+      </button>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-      <a href="medicalaura_index.html" class="glass-card rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 group block relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-pink rounded-bl-full opacity-5 group-hover:opacity-10 transition-opacity"></div>
-        <div class="w-16 h-16 bg-pink-100 text-brand-pink rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-inner">🏥</div>
-        <h2 class="text-2xl font-black text-brand-navy mb-2 group-hover:text-brand-pink transition-colors">MedicalAura</h2>
-        <p class="text-slate-500 text-sm mb-6 leading-relaxed">Zaawansowana porównywarka pakietów opieki medycznej B2B. Wyliczaj składki, mapuj placówki i sprawdzaj standardy świadczeń (Tiers).</p>
-        <div class="text-brand-pink font-bold text-sm flex items-center gap-2">Uruchom aplikację <span class="group-hover:translate-x-1 transition-transform">→</span></div>
-      </a>
-      <a href="lifeaura_index.html" class="glass-card rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 group block relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-blue rounded-bl-full opacity-5 group-hover:opacity-10 transition-opacity"></div>
-        <div class="w-16 h-16 bg-blue-100 text-brand-blue rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-inner">🛡️</div>
-        <h2 class="text-2xl font-black text-brand-navy mb-2 group-hover:text-brand-blue transition-colors">LifeAura</h2>
-        <p class="text-slate-500 text-sm mb-6 leading-relaxed">Kreator i kalkulator ubezpieczeń grupowych na życie. Porównuj sumy ubezpieczenia i zakresy ryzyk na jednej matrycy.</p>
-        <div class="text-brand-blue font-bold text-sm flex items-center gap-2">Uruchom aplikację <span class="group-hover:translate-x-1 transition-transform">→</span></div>
-      </a>
-    </div>
-  </div>
 
-  <!-- Baza Wiedzy -->
-  <div id="tab-blog" class="tab-panel">
-    <div class="flex justify-between items-end mb-8">
-      <div>
-        <h2 class="text-3xl font-black text-brand-navy">Baza Wiedzy HR</h2>
-        <p class="text-slate-500 mt-2">Artykuły, porady i trendy w benefitach pracowniczych.</p>
-      </div>
-      <button onclick="loadPublishedArticles()" class="text-sm font-bold text-brand-purple hover:underline">🔄 Odśwież</button>
+    <div class="nav-section admin-only hidden">
+      <div class="nav-label">Panel Redaktora</div>
+      <button class="nav-item" data-page="dashboard" onclick="navTo('dashboard')">
+        <i data-lucide="layout-dashboard" width="17" height="17"></i> Pulpit
+      </button>
+      <button class="nav-item" data-page="articles" onclick="navTo('articles')">
+        <i data-lucide="file-text" width="17" height="17"></i> Artykuły
+      </button>
+      <button class="nav-item" data-page="social" onclick="navTo('social')">
+        <i data-lucide="share-2" width="17" height="17"></i> Social Media
+      </button>
+      <button class="nav-item" data-page="analytics" onclick="navTo('analytics')">
+        <i data-lucide="bar-chart-2" width="17" height="17"></i> Analityka
+      </button>
     </div>
-    <div id="blogGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div class="col-span-full py-20 text-center text-slate-400">Pobieranie artykułów...</div>
-    </div>
-  </div>
 
-  <!-- Czytnik artykułu -->
-  <div id="tab-article" class="tab-panel">
-    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-      <div class="px-8 py-5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-        <button onclick="closeArticle()" class="text-sm font-bold text-brand-navy flex items-center gap-2 hover:text-brand-purple transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-          Wróć do Bazy Wiedzy
+    <div class="nav-section admin-only hidden">
+      <div class="nav-label">System</div>
+      <button class="nav-item" data-page="users" onclick="navTo('users')">
+        <i data-lucide="users" width="17" height="17"></i> Użytkownicy
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <button id="loginSideBtn" onclick="showLoginScreen()" class="nav-item" style="width:100%">
+        <i data-lucide="log-in" width="17" height="17"></i> Panel redaktora
+      </button>
+      <button id="logoutSideBtn" onclick="doLogout()" class="nav-item nav-item-danger hidden" style="width:100%">
+        <i data-lucide="log-out" width="17" height="17"></i> Wyloguj
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn-icon" onclick="toggleSidebar()" title="Menu">
+          <i data-lucide="menu" width="20" height="20"></i>
         </button>
-        <button onclick="copyArticleLink()" class="text-xs bg-white border border-slate-200 hover:bg-slate-100 text-brand-navy font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-          </svg>
-          Skopiuj link
+        <span id="topbarTitle" class="topbar-title">Baza Wiedzy HR</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="topbarUser" class="topbar-user hidden"></span>
+        <button class="btn-icon" id="btn-theme" title="Zmień motyw">
+          <i data-lucide="moon" width="18" height="18"></i>
         </button>
       </div>
-      <div class="p-8 md:p-14">
-        <div id="amTags" class="mb-6 flex flex-wrap gap-2"></div>
-        <h1 id="amTitle" class="text-3xl md:text-5xl font-black text-brand-navy mb-6 leading-tight"></h1>
-        <div id="amDate" class="text-sm text-slate-400 font-bold mb-10 uppercase tracking-widest border-b border-slate-100 pb-6"></div>
-        <div id="amContent" class="prose-custom text-slate-700 max-w-none"></div>
-      </div>
-    </div>
-  </div>
+    </header>
 
-  <!-- Panel CMS Admin -->
-  <div id="tab-admin" class="tab-panel">
-    <div class="mb-8 flex flex-col md:flex-row justify-between md:items-end gap-4">
-      <div>
-        <h2 class="text-3xl font-black text-brand-navy">📝 System CMS</h2>
-        <p class="text-slate-500 mt-2">Zarządzaj swoimi artykułami. Dodawaj nowe wpisy, decyduj, gdzie je publikujesz i edytuj istniejące.</p>
+    <main class="content-area">
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: BAZA WIEDZY (public blog)                                      -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page active" id="page-blog">
+        <h1 class="page-title">Baza Wiedzy HR</h1>
+        <p class="page-subtitle">Artykuły, porady i trendy w benefitach pracowniczych.</p>
+        <div id="blogGrid" class="blog-grid">
+          <div class="empty-state">Pobieranie artykułów...</div>
+        </div>
       </div>
-      <button onclick="openNewArticleModal()"
-              class="bg-brand-purple hover:bg-indigo-600 text-white font-black py-3 px-6 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 shrink-0">
-        ➕ Utwórz nowy artykuł
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: CZYTNIK ARTYKUŁU                                               -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page" id="page-article">
+        <div class="article-reader">
+          <div class="article-reader-bar">
+            <button onclick="closeArticle()" class="btn btn-ghost btn-sm">
+              <i data-lucide="arrow-left" width="15" height="15"></i> Wróć
+            </button>
+            <button onclick="copyArticleLink()" class="btn btn-ghost btn-sm">
+              <i data-lucide="link" width="15" height="15"></i> Skopiuj link
+            </button>
+          </div>
+          <div class="article-reader-body">
+            <div id="amTags" class="article-tags"></div>
+            <h1 id="amTitle" class="article-title"></h1>
+            <div id="amDate" class="article-date"></div>
+            <div id="amContent" class="prose-custom"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: PULPIT (admin dashboard)                                       -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page" id="page-dashboard">
+        <h1 class="page-title">Pulpit główny</h1>
+        <p class="page-subtitle">Przegląd aktywności w całym ekosystemie Aura.</p>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Opublikowane artykuły</div>
+            <div class="kpi-value" id="kpi-published">—</div>
+            <div class="kpi-sub">Łącznie na wszystkich platformach</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Szkice</div>
+            <div class="kpi-value" id="kpi-drafts">—</div>
+            <div class="kpi-sub">Nieopublikowane wpisy</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Aktywne platformy</div>
+            <div class="kpi-value">6</div>
+            <div class="kpi-sub">AuraBenefits, Grupowe.pro i inne</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Posty Social (oczekujące)</div>
+            <div class="kpi-value" style="color:var(--color-warning)">5</div>
+            <div class="kpi-sub">Zaplanowane do publikacji</div>
+          </div>
+        </div>
+
+        <div class="two-col-grid">
+          <div class="table-wrap">
+            <div class="table-toolbar">
+              <h3 style="font-size:var(--text-base);margin:0">Ostatnie artykuły</h3>
+              <button onclick="navTo('articles')" class="btn btn-ghost btn-sm">
+                Zobacz wszystkie
+              </button>
+            </div>
+            <table class="tbl">
+              <thead>
+                <tr><th>Tytuł</th><th>Platformy</th><th>Status</th><th>Data</th></tr>
+              </thead>
+              <tbody id="dashboard-recent-articles">
+                <tr><td colspan="4" class="empty-state">Ładowanie...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="quick-actions-card">
+            <h3 style="font-size:var(--text-base);margin-bottom:16px">Szybkie akcje</h3>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button class="btn btn-primary" onclick="navTo('articles');openNewArticleModal()"
+                      style="justify-content:flex-start">
+                <i data-lucide="pen-tool" width="16" height="16"></i> Napisz nowy artykuł
+              </button>
+              <button class="btn btn-ghost" onclick="navTo('social');openModal('modal-social')"
+                      style="justify-content:flex-start">
+                <i data-lucide="share" width="16" height="16"></i> Zaplanuj post SoMe
+              </button>
+              <button class="btn btn-ghost" onclick="navTo('analytics')"
+                      style="justify-content:flex-start">
+                <i data-lucide="pie-chart" width="16" height="16"></i> Zobacz analitykę
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: ARTYKUŁY (admin articles table)                                -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page" id="page-articles">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Artykuły i Blogi</h1>
+            <p class="page-subtitle">Zarządzaj wpisami na wszystkich prowadzonych stronach.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openNewArticleModal()">
+            <i data-lucide="plus" width="17" height="17"></i> Nowy artykuł
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select class="form-select filter-select" id="filterPlatform" onchange="loadAdminArticles()">
+                <option value="">Wszystkie platformy</option>
+                <option value="AuraBenefits">AuraBenefits</option>
+                <option value="AuraConsulting.pl">AuraConsulting.pl</option>
+                <option value="Grupowe.pro">Grupowe.pro</option>
+                <option value="UtrataDochodu.pl">UtrataDochodu.pl</option>
+                <option value="Gwarancje.pro">Gwarancje.pro</option>
+                <option value="Idzik.org.pl">Idzik.org.pl</option>
+              </select>
+              <select class="form-select filter-select" id="filterStatus" onchange="loadAdminArticles()">
+                <option value="">Wszystkie statusy</option>
+                <option value="published">Opublikowane</option>
+                <option value="draft">Szkice</option>
+              </select>
+            </div>
+            <button onclick="loadAdminArticles()" class="btn btn-ghost btn-sm">
+              <i data-lucide="refresh-cw" width="14" height="14"></i> Odśwież
+            </button>
+          </div>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Tytuł artykułu</th>
+                <th>Platformy</th>
+                <th>Status</th>
+                <th>Data</th>
+                <th>Akcje</th>
+              </tr>
+            </thead>
+            <tbody id="adminArticlesList">
+              <tr><td colspan="5" class="empty-state">Ładowanie artykułów...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: SOCIAL MEDIA                                                   -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page" id="page-social">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Social Media</h1>
+            <p class="page-subtitle">Harmonogram i publikacja postów w mediach społecznościowych.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modal-social')">
+            <i data-lucide="plus" width="17" height="17"></i> Zaplanuj post
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead>
+              <tr><th>Treść posta</th><th>Kanały</th><th>Data zaplanowana</th><th>Status</th><th>Akcje</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="td-truncate">Z dumą ogłaszamy dołączenie do programu Liderzy Biznesu!</td>
+                <td><i data-lucide="linkedin" width="15" height="15" style="color:#0a66c2;vertical-align:middle"></i> LinkedIn</td>
+                <td><strong>Jutro, 10:00</strong></td>
+                <td><span class="badge badge-warning">Oczekuje</span></td>
+                <td class="td-actions">
+                  <button class="btn-icon"><i data-lucide="edit" width="15" height="15"></i></button>
+                  <button class="btn-icon btn-icon-danger"><i data-lucide="trash-2" width="15" height="15"></i></button>
+                </td>
+              </tr>
+              <tr>
+                <td class="td-truncate">Przypominamy: Wadium w formie gwarancji oszczędza gotówkę!</td>
+                <td><i data-lucide="facebook" width="15" height="15" style="color:#1877f2;vertical-align:middle"></i> Facebook</td>
+                <td>2026-03-24, 08:30</td>
+                <td><span class="badge badge-warning">Oczekuje</span></td>
+                <td class="td-actions">
+                  <button class="btn-icon"><i data-lucide="edit" width="15" height="15"></i></button>
+                  <button class="btn-icon btn-icon-danger"><i data-lucide="trash-2" width="15" height="15"></i></button>
+                </td>
+              </tr>
+              <tr>
+                <td class="td-truncate">Krótka relacja z wczorajszej konferencji ubezpieczeniowej...</td>
+                <td><i data-lucide="instagram" width="15" height="15" style="color:#e1306c;vertical-align:middle"></i> Instagram</td>
+                <td>2026-03-15, 12:00</td>
+                <td><span class="badge badge-success">Opublikowano</span></td>
+                <td class="td-actions">
+                  <button class="btn-icon"><i data-lucide="eye" width="15" height="15"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: ANALITYKA                                                      -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page" id="page-analytics">
+        <h1 class="page-title">Analityka Ruchu</h1>
+        <p class="page-subtitle">Wizyty i unikalni użytkownicy dla Twoich projektów (ostatnie 30 dni).</p>
+
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <h3 style="margin:0">Ruch wg Domen</h3>
+            <select class="form-select filter-select">
+              <option>Ostatnie 30 dni</option>
+              <option>Ten rok</option>
+            </select>
+          </div>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Strona internetowa</th>
+                <th style="text-align:right">Odsłony</th>
+                <th style="text-align:right">Unikalni (UU)</th>
+                <th style="text-align:right">Czas na stronie</th>
+                <th>Trend (M/M)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="domain-tag d-aura">auraconsulting.pl</span></td>
+                <td style="text-align:right">12,450</td><td style="text-align:right">8,200</td>
+                <td style="text-align:right">2m 14s</td>
+                <td><span class="trend-up">↑ +4.2%</span></td>
+              </tr>
+              <tr>
+                <td><span class="domain-tag d-benefits">aurabenefits.pl</span></td>
+                <td style="text-align:right">6,780</td><td style="text-align:right">4,200</td>
+                <td style="text-align:right">2m 45s</td>
+                <td><span class="trend-up">↑ +6.5%</span></td>
+              </tr>
+              <tr>
+                <td><span class="domain-tag d-gwar">gwarancje.pro</span></td>
+                <td style="text-align:right">8,930</td><td style="text-align:right">5,100</td>
+                <td style="text-align:right">1m 45s</td>
+                <td><span class="trend-up">↑ +12.1%</span></td>
+              </tr>
+              <tr>
+                <td><span class="domain-tag d-utrata">utratadochodu.pl</span></td>
+                <td style="text-align:right">15,200</td><td style="text-align:right">11,050</td>
+                <td style="text-align:right">3m 05s</td>
+                <td><span class="trend-down">↓ -1.5%</span></td>
+              </tr>
+              <tr>
+                <td><span class="domain-tag d-grupowe">grupowe.pro</span></td>
+                <td style="text-align:right">4,100</td><td style="text-align:right">2,800</td>
+                <td style="text-align:right">1m 10s</td>
+                <td><span class="trend-up">↑ +8.0%</span></td>
+              </tr>
+              <tr>
+                <td><span class="domain-tag d-idzik">idzik.org.pl</span></td>
+                <td style="text-align:right">2,300</td><td style="text-align:right">1,900</td>
+                <td style="text-align:right">1m 30s</td>
+                <td><span class="trend-up">↑ +2.4%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: UŻYTKOWNICY                                                    -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page" id="page-users">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Użytkownicy Ekosystemu</h1>
+            <p class="page-subtitle">Zarządzaj zespołem redakcyjnym, analitykami i uprawnieniami.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('modal-user')">
+            <i data-lucide="user-plus" width="17" height="17"></i> Dodaj osobę
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead>
+              <tr><th>Imię i nazwisko / Email</th><th>Rola w systemie</th><th>Dostęp do domen</th><th>Akcje</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <strong>Jan Kowalski</strong><br>
+                  <span class="td-meta">admin@auraconsulting.pl</span>
+                </td>
+                <td><span class="badge badge-primary">Super Admin</span></td>
+                <td>Wszystkie</td>
+                <td class="td-actions">
+                  <button class="btn-icon"><i data-lucide="edit" width="15" height="15"></i></button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Anna Nowak</strong><br>
+                  <span class="td-meta">anna@gwarancje.pro</span>
+                </td>
+                <td><span class="badge badge-success">Redaktor</span></td>
+                <td><span class="domain-tag d-gwar">gwarancje.pro</span></td>
+                <td class="td-actions">
+                  <button class="btn-icon"><i data-lucide="edit" width="15" height="15"></i></button>
+                  <button class="btn-icon btn-icon-danger"><i data-lucide="trash-2" width="15" height="15"></i></button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Marek Idzik</strong><br>
+                  <span class="td-meta">kancelaria@idzik.org.pl</span>
+                </td>
+                <td><span class="badge badge-muted">Gość (odczyt)</span></td>
+                <td><span class="domain-tag d-idzik">idzik.org.pl</span></td>
+                <td class="td-actions">
+                  <button class="btn-icon"><i data-lucide="edit" width="15" height="15"></i></button>
+                  <button class="btn-icon btn-icon-danger"><i data-lucide="trash-2" width="15" height="15"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div><!-- /main-content -->
+</div><!-- /app-container -->
+
+<!-- ── MODAL: KREATOR / EDYTOR ARTYKUŁU ─────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-article">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <h2 class="modal-title" id="cmsModalTitle">Kreator Artykułu</h2>
+      <button class="btn-icon" onclick="closeModal('modal-article')">
+        <i data-lucide="x" width="18" height="18"></i>
       </button>
     </div>
-    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm min-h-[400px]">
-      <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-        <h3 class="text-lg font-bold text-brand-navy">Twoje Artykuły</h3>
-        <button onclick="loadAdminArticles()" class="text-xs text-brand-purple font-bold hover:underline">Odśwież listę</button>
-      </div>
-      <div id="adminArticlesList" class="space-y-4">
-        <div class="text-center text-slate-400 py-10 text-sm">Ładowanie artykułów...</div>
-      </div>
-    </div>
-  </div>
-
-</main>
-
-<!-- ── Modal CMS ──────────────────────────────────────────────────────────── -->
-<div id="cmsModal" class="fixed inset-0 bg-slate-900/90 z-[60] hidden items-center justify-center p-4 backdrop-blur-sm">
-  <div class="bg-white rounded-3xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-    <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-      <h2 id="cmsModalTitle" class="text-xl font-black text-brand-navy">Kreator Artykułu</h2>
-      <button onclick="closeCmsModal()"
-              class="w-8 h-8 bg-white border border-slate-200 hover:bg-slate-100 rounded-full flex items-center justify-center text-xl text-slate-500 font-bold transition-colors">
-        &times;
-      </button>
-    </div>
-    <div class="p-6 overflow-y-auto custom-scroll space-y-6 flex-grow">
+    <div class="modal-body custom-scroll">
       <input type="hidden" id="cmsId">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div class="md:col-span-2">
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Tytuł artykułu</label>
-          <input type="text" id="cmsTitle"
-                 class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-brand-purple font-bold text-brand-navy text-lg"
+
+      <div class="form-row">
+        <div class="form-field" style="flex:2">
+          <label class="form-label">Tytuł artykułu</label>
+          <input type="text" id="cmsTitle" class="form-input"
                  placeholder="Wpisz chwytliwy tytuł...">
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Tagi (po przecinku)</label>
-          <input type="text" id="cmsTags"
-                 class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-brand-purple text-sm text-slate-600"
+        <div class="form-field" style="flex:1">
+          <label class="form-label">Tagi (po przecinku)</label>
+          <input type="text" id="cmsTags" class="form-input"
                  placeholder="np. HR, Ubezpieczenia">
         </div>
       </div>
 
-      <div class="bg-indigo-50/30 border-2 border-indigo-100 rounded-xl p-5">
-        <label class="block text-xs font-black text-brand-navy uppercase tracking-widest mb-3">Gdzie chcesz opublikować?</label>
-        <div class="flex flex-wrap gap-4">
-          <label class="flex items-center gap-3 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-brand-purple transition-colors">
-            <input type="checkbox" id="plat_aurabenefits" value="AuraBenefits" class="w-5 h-5 text-brand-purple rounded">
-            <span class="text-sm font-bold text-brand-navy">AuraBenefits <span class="font-normal text-xs text-slate-500">(Główny Portal)</span></span>
+      <div class="platform-picker">
+        <label class="form-label" style="margin-bottom:10px">Gdzie publikować?</label>
+        <div class="platform-grid">
+          <label class="platform-option">
+            <input type="checkbox" id="plat_aurabenefits" value="AuraBenefits">
+            <span class="domain-tag d-benefits">AuraBenefits</span>
           </label>
-          <label class="flex items-center gap-3 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-blue-600 transition-colors">
-            <input type="checkbox" id="plat_grupowe" value="Grupowe.pro" class="w-5 h-5 text-blue-600 rounded">
-            <span class="text-sm font-bold text-brand-navy">Grupowe.pro</span>
+          <label class="platform-option">
+            <input type="checkbox" id="plat_auraconsulting" value="AuraConsulting.pl">
+            <span class="domain-tag d-aura">AuraConsulting.pl</span>
           </label>
-          <label class="flex items-center gap-3 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-teal-600 transition-colors">
-            <input type="checkbox" id="plat_utratadochodu" value="UtrataDochodu.pl" class="w-5 h-5 text-teal-600 rounded">
-            <span class="text-sm font-bold text-brand-navy">UtrataDochodu.pl</span>
+          <label class="platform-option">
+            <input type="checkbox" id="plat_grupowe" value="Grupowe.pro">
+            <span class="domain-tag d-grupowe">Grupowe.pro</span>
           </label>
-          <label class="flex items-center gap-3 cursor-pointer bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-amber-600 transition-colors">
-            <input type="checkbox" id="plat_auraconsulting" value="AuraConsulting.pl" class="w-5 h-5 text-amber-600 rounded">
-            <span class="text-sm font-bold text-brand-navy">AuraConsulting.pl</span>
+          <label class="platform-option">
+            <input type="checkbox" id="plat_utratadochodu" value="UtrataDochodu.pl">
+            <span class="domain-tag d-utrata">UtrataDochodu.pl</span>
+          </label>
+          <label class="platform-option">
+            <input type="checkbox" id="plat_gwarancje" value="Gwarancje.pro">
+            <span class="domain-tag d-gwar">Gwarancje.pro</span>
+          </label>
+          <label class="platform-option">
+            <input type="checkbox" id="plat_idzik" value="Idzik.org.pl">
+            <span class="domain-tag d-idzik">Idzik.org.pl</span>
           </label>
         </div>
       </div>
 
-      <div>
-        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Zajawka</label>
-        <textarea id="cmsExcerpt" rows="2"
-                  class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-brand-purple text-sm text-slate-600"
-                  placeholder="Wstęp, który zachęci do kliknięcia..."></textarea>
+      <div class="form-field">
+        <label class="form-label">Zajawka</label>
+        <textarea id="cmsExcerpt" class="form-textarea" rows="2"
+                  placeholder="Krótki wstęp zachęcający do kliknięcia..."></textarea>
       </div>
 
-      <div>
-        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
-          Link do YouTube (miniaturka na liście artykułów)
-        </label>
-        <div class="flex gap-3 items-start">
-          <input type="url" id="cmsThumbnail"
-                 class="flex-grow bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-brand-purple text-sm text-slate-600"
+      <div class="form-field">
+        <label class="form-label">Link do YouTube (miniaturka na liście artykułów)</label>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <input type="url" id="cmsThumbnail" class="form-input"
                  placeholder="https://www.youtube.com/watch?v=..."
                  oninput="previewThumbnail(this.value)">
-          <div id="thumbPreview"
-               class="w-24 h-16 rounded-xl bg-slate-100 border border-slate-200 flex-shrink-0 bg-cover bg-center hidden"></div>
+          <div id="thumbPreview" class="thumb-preview hidden"></div>
         </div>
-        <p class="text-xs text-slate-400 mt-1">Miniaturka pojawi się automatycznie na karcie artykułu w siatce bloga.</p>
+        <p class="form-hint">Miniaturka pojawi się automatycznie na karcie artykułu.</p>
       </div>
 
-      <div>
-        <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Treść główna</label>
+      <div class="form-field">
+        <label class="form-label">Treść główna</label>
         <div id="quillEditor"></div>
       </div>
     </div>
-
-    <div class="p-5 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <span class="text-xs text-slate-500 hidden md:block">Wklej zdjęcia przez Ctrl+V lub użyj toolbara edytora.</span>
-      <div class="flex gap-3 w-full sm:w-auto">
-        <button onclick="closeCmsModal()"
-                class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 border border-slate-200 transition-colors">
-          Anuluj
-        </button>
-        <button onclick="saveArticle('draft')"
-                class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-6 rounded-xl shadow-md transition-transform active:scale-95">
-          Zapisz Szkic
-        </button>
-        <button onclick="saveArticle('published')"
-                class="flex-1 sm:flex-none bg-brand-purple hover:bg-indigo-600 text-white font-bold py-2.5 px-6 rounded-xl shadow-md transition-transform active:scale-95">
-          Opublikuj
-        </button>
+    <div class="modal-footer">
+      <span class="modal-footer-hint">Wklej zdjęcia przez Ctrl+V lub użyj toolbara edytora.</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeModal('modal-article')" class="btn btn-ghost">Anuluj</button>
+        <button onclick="saveArticle('draft')" class="btn btn-ghost btn-save-draft">Zapisz szkic</button>
+        <button onclick="saveArticle('published')" class="btn btn-primary">Opublikuj</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── Skrypty ────────────────────────────────────────────────────────────── -->
+<!-- ── MODAL: SOCIAL MEDIA POST ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-social">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Zaplanuj Post Social Media</h2>
+      <button class="btn-icon" onclick="closeModal('modal-social')">
+        <i data-lucide="x" width="18" height="18"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Kanały publikacji</label>
+        <div class="social-channels">
+          <label class="social-channel">
+            <input type="checkbox" checked>
+            <i data-lucide="facebook" width="16" height="16" style="color:#1877f2"></i> Facebook
+          </label>
+          <label class="social-channel">
+            <input type="checkbox" checked>
+            <i data-lucide="linkedin" width="16" height="16" style="color:#0a66c2"></i> LinkedIn
+          </label>
+          <label class="social-channel">
+            <input type="checkbox">
+            <i data-lucide="instagram" width="16" height="16" style="color:#e1306c"></i> Instagram
+          </label>
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Treść posta</label>
+        <textarea class="form-textarea" placeholder="Co słychać? Możesz używać emoji 😊"></textarea>
+      </div>
+      <div class="form-field">
+        <label class="form-label">URL Grafiki</label>
+        <input class="form-input" type="url" placeholder="https://...">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Data publikacji</label>
+          <input class="form-input" type="date">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Godzina</label>
+          <input class="form-input" type="time">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer modal-footer-right">
+      <button class="btn btn-ghost" onclick="closeModal('modal-social')">Anuluj</button>
+      <button class="btn btn-primary">
+        <i data-lucide="calendar" width="15" height="15"></i> Zaplanuj
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: DODAJ UŻYTKOWNIKA ──────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Dodaj użytkownika</h2>
+      <button class="btn-icon" onclick="closeModal('modal-user')">
+        <i data-lucide="x" width="18" height="18"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Imię i nazwisko</label>
+          <input class="form-input" type="text" placeholder="Jan Kowalski">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Adres E-mail</label>
+          <input class="form-input" type="email" placeholder="jan@auraconsulting.pl">
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Rola w systemie</label>
+        <select class="form-select">
+          <option>Redaktor (może pisać i planować posty)</option>
+          <option>Super Admin (pełen dostęp)</option>
+          <option>Gość (tylko odczyt statystyk)</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Ogranicz dostęp do domen <span class="form-hint-inline">(zostaw puste = wszystkie)</span></label>
+        <select class="form-select" multiple style="height:120px">
+          <option>AuraBenefits</option>
+          <option>AuraConsulting.pl</option>
+          <option>Grupowe.pro</option>
+          <option>UtrataDochodu.pl</option>
+          <option>Gwarancje.pro</option>
+          <option>Idzik.org.pl</option>
+        </select>
+        <p class="form-hint">Przytrzymaj Ctrl aby zaznaczyć wiele.</p>
+      </div>
+    </div>
+    <div class="modal-footer modal-footer-right">
+      <button class="btn btn-ghost" onclick="closeModal('modal-user')">Anuluj</button>
+      <button class="btn btn-primary">
+        <i data-lucide="user-plus" width="15" height="15"></i> Utwórz konto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SKRYPTY ────────────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="./app.js"></script>
 
 </body>
