@@ -10,6 +10,8 @@ const SB_CLIENT = supabase.createClient(SB_URL, SB_KEY);
 let currentRole = 'viewer';
 let currentUser = null;
 let quillInstance = null;
+let autoSaveTimer = null;
+let editorDirty = false;
 
 // Mapowanie platform na klasy CSS domain-tag
 const PLAT_CLASS = {
@@ -199,6 +201,7 @@ function navTo(page, skipHash = false) {
   if (page === 'blog')      loadPublishedArticles();
   if (page === 'dashboard') loadDashboard();
   if (page === 'articles')  loadAdminArticles();
+  if (page === 'analytics') loadAnalytics();
 
   if (!skipHash) history.pushState(null, null, '#' + page);
 }
@@ -241,23 +244,171 @@ function initThemeToggle() {
 
 
 // =============================================================================
+//  SUPABASE STORAGE — upload zdjęć
+// =============================================================================
+async function uploadImageToSupabase(file) {
+  const ext = ((file.name || 'image').split('.').pop() || 'jpg')
+    .toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const filename = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
+
+  setAutoSaveIndicator('saving', 'Wgrywanie zdjęcia...');
+
+  const { error } = await SB_CLIENT.storage
+    .from('article-images')
+    .upload(filename, file, { contentType: file.type, upsert: false });
+
+  if (error) {
+    setAutoSaveIndicator('error', '⚠ Błąd uploadu: ' + error.message);
+    setTimeout(hideAutoSaveIndicator, 4000);
+    return null;
+  }
+
+  const { data: { publicUrl } } = SB_CLIENT.storage
+    .from('article-images')
+    .getPublicUrl(filename);
+
+  setAutoSaveIndicator('saved', '✓ Zdjęcie wgrane');
+  setTimeout(hideAutoSaveIndicator, 2000);
+  return publicUrl;
+}
+
+
+// =============================================================================
 //  QUILL — inicjalizacja
 // =============================================================================
 function initQuill() {
+  if (typeof ImageResize !== 'undefined') {
+    Quill.register('modules/imageResize', ImageResize);
+  }
+
+  const modules = {
+    toolbar: [
+      [{ header: [2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link', 'image', 'video'],
+      ['clean'],
+    ],
+  };
+
+  if (typeof ImageResize !== 'undefined') {
+    modules.imageResize = { parchment: Quill.import('parchment') };
+  }
+
   quillInstance = new Quill('#quillEditor', {
     theme: 'snow',
     placeholder: 'Zacznij pisać swój artykuł tutaj...',
-    modules: {
-      toolbar: [
-        [{ header: [2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        ['blockquote'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['link', 'image', 'video'],
-        ['clean'],
-      ],
-    },
+    modules,
   });
+
+  // Toolbar image button — otwiera file picker, wgrywa do Supabase Storage
+  quillInstance.getModule('toolbar').addHandler('image', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const url = await uploadImageToSupabase(file);
+      if (!url) return;
+      const range = quillInstance.getSelection(true);
+      quillInstance.insertEmbed(range.index, 'image', url, 'user');
+      quillInstance.setSelection(range.index + 1);
+    };
+    input.click();
+  });
+
+  // Paste — przechwytuje obrazy ze schowka i wgrywa do Supabase Storage
+  quillInstance.root.addEventListener('paste', async (e) => {
+    const items = (e.clipboardData || window.clipboardData)?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        const url = await uploadImageToSupabase(file);
+        if (!url) return;
+        const range = quillInstance.getSelection(true);
+        quillInstance.insertEmbed(range ? range.index : 0, 'image', url, 'user');
+        return;
+      }
+    }
+  });
+
+  // Śledź zmiany do auto-save
+  quillInstance.on('text-change', () => { editorDirty = true; });
+}
+
+
+// =============================================================================
+//  EDYTOR — fullscreen, auto-save
+// =============================================================================
+function toggleEditorFullscreen() {
+  const modal = document.querySelector('#modal-article .modal');
+  const icon  = document.querySelector('#btn-fullscreen-editor i');
+  const isFs  = modal.classList.toggle('modal-fullscreen');
+  if (icon) {
+    icon.setAttribute('data-lucide', isFs ? 'minimize-2' : 'maximize-2');
+    lucide.createIcons();
+  }
+}
+
+function setAutoSaveIndicator(state, text) {
+  const el = document.getElementById('autosaveIndicator');
+  if (!el) return;
+  el.className = `autosave-indicator ${state}`;
+  el.textContent = text;
+}
+
+function hideAutoSaveIndicator() {
+  const el = document.getElementById('autosaveIndicator');
+  if (el) el.classList.add('hidden');
+}
+
+function startAutoSave() {
+  editorDirty = false;
+  clearInterval(autoSaveTimer);
+  autoSaveTimer = setInterval(runAutoSave, 30000);
+}
+
+function stopAutoSave() {
+  clearInterval(autoSaveTimer);
+  autoSaveTimer = null;
+  hideAutoSaveIndicator();
+}
+
+async function runAutoSave() {
+  if (!editorDirty) return;
+  const id = document.getElementById('cmsId').value;
+  if (!id) return;
+
+  const title = document.getElementById('cmsTitle').value.trim();
+  if (!title) return;
+
+  setAutoSaveIndicator('saving', 'Automatyczne zapisywanie...');
+
+  const contentHtml  = quillInstance.root.innerHTML;
+  const excerpt      = document.getElementById('cmsExcerpt').value.trim();
+  const tagsStr      = document.getElementById('cmsTags').value.trim();
+  const tags         = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const thumbnailUrl = document.getElementById('cmsThumbnail').value.trim();
+  const platforms    = ALL_PLATFORMS
+    .filter(p => document.getElementById(p.id).checked)
+    .map(p => p.value);
+
+  const { error } = await SB_CLIENT.from('aura_articles').update({
+    title, excerpt, content: contentHtml, tags, platforms,
+    thumbnail_url: thumbnailUrl || null,
+  }).eq('id', id);
+
+  if (!error) {
+    editorDirty = false;
+    setAutoSaveIndicator('saved', '✓ Automatycznie zapisano');
+    setTimeout(hideAutoSaveIndicator, 3000);
+  } else {
+    setAutoSaveIndicator('error', '⚠ Błąd auto-zapisu');
+  }
 }
 
 
@@ -318,6 +469,9 @@ async function openArticle(id, skipHashChange = false) {
     navTo('blog');
     return;
   }
+
+  // Inkrementuj licznik wyświetleń (nie czekaj na wynik)
+  SB_CLIENT.rpc('increment_article_views', { article_id: id });
 
   document.getElementById('amTitle').textContent = data.title;
   document.getElementById('amDate').textContent  =
@@ -489,6 +643,7 @@ function openNewArticleModal() {
 
   quillInstance.root.innerHTML = '';
   openModal('modal-article');
+  startAutoSave();
 }
 
 async function editArticleInCms(id) {
@@ -512,6 +667,7 @@ async function editArticleInCms(id) {
 
   quillInstance.root.innerHTML = data.content;
   openModal('modal-article');
+  startAutoSave();
 }
 
 async function saveArticle(desiredStatus) {
@@ -548,6 +704,7 @@ async function saveArticle(desiredStatus) {
     : await SB_CLIENT.from('aura_articles').insert([payload]);
 
   if (!error) {
+    editorDirty = false;
     closeModal('modal-article');
     alert(desiredStatus === 'published' ? 'Artykuł opublikowany!' : 'Szkic zapisany.');
     loadAdminArticles();
@@ -583,10 +740,61 @@ function previewThumbnail(url) {
 
 
 // =============================================================================
+//  ANALITYKA — wyświetlenia artykułów
+// =============================================================================
+async function loadAnalytics() {
+  if (currentRole !== 'admin') return;
+
+  const tbody = document.getElementById('analyticsArticlesList');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Ładowanie...</td></tr>`;
+
+  const { data, error } = await SB_CLIENT
+    .from('aura_articles')
+    .select('id, title, platforms, status, views')
+    .order('views', { ascending: false })
+    .limit(10);
+
+  if (error || !data) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state empty-state-error">Błąd: ${escapeHtml(error?.message || '')}</td></tr>`;
+    return;
+  }
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Brak artykułów.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(art => {
+    const plats = (art.platforms || []).map(platBadge).join(' ');
+    const badge = art.status === 'published'
+      ? '<span class="badge badge-success">Opublikowano</span>'
+      : '<span class="badge badge-muted">Szkic</span>';
+    return `<tr>
+      <td><strong>${escapeHtml(art.title)}</strong></td>
+      <td>${plats}</td>
+      <td style="text-align:right;font-weight:600">${(art.views || 0).toLocaleString('pl-PL')}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+
+// =============================================================================
 //  MODALS — generyczne
 // =============================================================================
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'modal-article') {
+    stopAutoSave();
+    // Wyjdź z fullscreen jeśli był aktywny
+    const modal = document.querySelector('#modal-article .modal');
+    if (modal) modal.classList.remove('modal-fullscreen');
+    const icon = document.querySelector('#btn-fullscreen-editor i');
+    if (icon) { icon.setAttribute('data-lucide', 'maximize-2'); lucide.createIcons(); }
+  }
+}
 
 
 // =============================================================================
