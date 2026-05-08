@@ -618,6 +618,32 @@ button { font-family: inherit; }
 .ql-toolbar button.ql-active .ql-fill   { fill:   var(--color-accent); }
 
 
+/* ── MODAL FULLSCREEN ────────────────────────────────────────────────────── */
+.modal-fullscreen {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  height: 100vh;
+  border-radius: 0 !important;
+}
+.modal-overlay:has(.modal-fullscreen) { padding: 0; }
+
+/* ── AUTO-SAVE INDICATOR ─────────────────────────────────────────────────── */
+.autosave-indicator {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color var(--transition);
+}
+.autosave-indicator.hidden { display: none; }
+.autosave-indicator.saving { color: var(--color-warning); }
+.autosave-indicator.saved  { color: var(--color-success); }
+.autosave-indicator.error  { color: var(--color-error); }
+
+/* ── QUILL IMAGE RESIZE ──────────────────────────────────────────────────── */
+.ql-editor img { max-width: 100%; cursor: pointer; }
+
 /* ── SCROLLBAR ───────────────────────────────────────────────────────────── */
 .custom-scroll::-webkit-scrollbar         { width: 5px; height: 5px; }
 .custom-scroll::-webkit-scrollbar-track  { background: var(--color-surface-offset); border-radius: 4px; }
