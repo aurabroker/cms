@@ -9,12 +9,15 @@
           script-src 'self' 'unsafe-inline'
             https://cdn.jsdelivr.net
             https://cdnjs.cloudflare.com
-            https://unpkg.com;
+            https://unpkg.com
+            https://static.cloudflareinsights.com;
           style-src 'self' 'unsafe-inline'
             https://fonts.googleapis.com;
           font-src https://fonts.gstatic.com;
           img-src 'self' data: blob: https://img.youtube.com https://kukvgsjrmrqtzhkszzum.supabase.co;
-          connect-src 'self' https://kukvgsjrmrqtzhkszzum.supabase.co;
+          connect-src 'self'
+            https://kukvgsjrmrqtzhkszzum.supabase.co
+            https://cloudflareinsights.com;
           frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com;
           object-src 'none';
         ">
