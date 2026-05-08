@@ -9,14 +9,15 @@
           script-src 'self' 'unsafe-inline'
             https://cdn.jsdelivr.net
             https://cdnjs.cloudflare.com
-            https://cdn.quilljs.com
-            https://unpkg.com;
+            https://unpkg.com
+            https://static.cloudflareinsights.com;
           style-src 'self' 'unsafe-inline'
-            https://fonts.googleapis.com
-            https://cdn.quilljs.com;
+            https://fonts.googleapis.com;
           font-src https://fonts.gstatic.com;
           img-src 'self' data: blob: https://img.youtube.com https://kukvgsjrmrqtzhkszzum.supabase.co;
-          connect-src 'self' https://kukvgsjrmrqtzhkszzum.supabase.co;
+          connect-src 'self'
+            https://kukvgsjrmrqtzhkszzum.supabase.co
+            https://cloudflareinsights.com;
           frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com;
           object-src 'none';
         ">
@@ -24,7 +25,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -569,7 +569,28 @@
 
       <div class="form-field">
         <label class="form-label">Treść główna</label>
-        <div id="quillEditor"></div>
+        <div class="tiptap-wrap">
+          <div class="tiptap-toolbar" id="tiptapToolbar">
+            <button type="button" class="tb-btn" data-active-check='["heading",{"level":2}]' onclick="tiptapCmd('toggleHeading',{level:2})" title="Nagłówek H2">H2</button>
+            <button type="button" class="tb-btn" data-active-check='["heading",{"level":3}]' onclick="tiptapCmd('toggleHeading',{level:3})" title="Nagłówek H3">H3</button>
+            <span class="tb-sep"></span>
+            <button type="button" class="tb-btn" data-active-check='["bold"]' onclick="tiptapCmd('toggleBold')" title="Pogrubienie"><strong>B</strong></button>
+            <button type="button" class="tb-btn" data-active-check='["italic"]' onclick="tiptapCmd('toggleItalic')" title="Kursywa"><em>I</em></button>
+            <button type="button" class="tb-btn" data-active-check='["underline"]' onclick="tiptapCmd('toggleUnderline')" title="Podkreślenie"><u>U</u></button>
+            <button type="button" class="tb-btn" data-active-check='["strike"]' onclick="tiptapCmd('toggleStrike')" title="Przekreślenie"><s>S</s></button>
+            <span class="tb-sep"></span>
+            <button type="button" class="tb-btn" data-active-check='["blockquote"]' onclick="tiptapCmd('toggleBlockquote')" title="Cytat">❝</button>
+            <button type="button" class="tb-btn" data-active-check='["bulletList"]' onclick="tiptapCmd('toggleBulletList')" title="Lista punktowana">• —</button>
+            <button type="button" class="tb-btn" data-active-check='["orderedList"]' onclick="tiptapCmd('toggleOrderedList')" title="Lista numerowana">1.</button>
+            <span class="tb-sep"></span>
+            <button type="button" class="tb-btn" data-active-check='["link"]' onclick="tiptapSetLink()" title="Link">🔗</button>
+            <button type="button" class="tb-btn" onclick="tiptapInsertImage()" title="Wstaw zdjęcie">🖼</button>
+            <button type="button" class="tb-btn" onclick="tiptapInsertYoutube()" title="Wstaw YouTube">▶</button>
+            <span class="tb-sep"></span>
+            <button type="button" class="tb-btn" onclick="tiptapClearFormat()" title="Usuń formatowanie">✕</button>
+          </div>
+          <div id="tiptapEditor"></div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -694,8 +715,14 @@
 <!-- ── SKRYPTY ────────────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
+<script src="https://unpkg.com/@tiptap/pm@2/dist/tiptap-pm.umd.js"></script>
+<script src="https://unpkg.com/@tiptap/core@2/dist/tiptap-core.umd.js"></script>
+<script src="https://unpkg.com/@tiptap/starter-kit@2/dist/tiptap-starter-kit.umd.js"></script>
+<script src="https://unpkg.com/@tiptap/extension-image@2/dist/tiptap-extension-image.umd.js"></script>
+<script src="https://unpkg.com/@tiptap/extension-link@2/dist/tiptap-extension-link.umd.js"></script>
+<script src="https://unpkg.com/@tiptap/extension-underline@2/dist/tiptap-extension-underline.umd.js"></script>
+<script src="https://unpkg.com/@tiptap/extension-placeholder@2/dist/tiptap-extension-placeholder.umd.js"></script>
+<script src="https://unpkg.com/@tiptap/extension-youtube@2/dist/tiptap-extension-youtube.umd.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="./app.js"></script>
 
