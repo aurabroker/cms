@@ -641,7 +641,7 @@ function openNewArticleModal() {
     document.getElementById(p.id).checked = (p.value === 'AuraBenefits');
   });
 
-  quillInstance.root.innerHTML = '';
+  quillInstance.setContents([{ insert: '\n' }]);
   openModal('modal-article');
   startAutoSave();
 }
@@ -665,7 +665,7 @@ async function editArticleInCms(id) {
     document.getElementById(p.id).checked = platforms.includes(p.value);
   });
 
-  quillInstance.root.innerHTML = data.content;
+  quillInstance.clipboard.dangerouslyPasteHTML(data.content || '');
   openModal('modal-article');
   startAutoSave();
 }
@@ -686,7 +686,7 @@ async function saveArticle(desiredStatus) {
 
   if (!platforms.length)             return alert('Wybierz przynajmniej jedno miejsce publikacji.');
   if (!title)                        return alert('Podaj tytuł artykułu.');
-  if (contentHtml === '<p><br></p>') return alert('Artykuł nie może być pusty.');
+  if (!quillInstance.getText().trim()) return alert('Artykuł nie może być pusty.');
 
   const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
 
