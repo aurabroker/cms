@@ -277,13 +277,7 @@ async function uploadImageToSupabase(file) {
 //  TIPTAP — inicjalizacja
 // =============================================================================
 function initTiptap() {
-  const { Editor } = TiptapCore;
-  const StarterKit    = TiptapStarterKit.StarterKit    || TiptapStarterKit;
-  const Image         = TiptapExtensionImage.Image     || TiptapExtensionImage;
-  const Link          = TiptapExtensionLink.Link       || TiptapExtensionLink;
-  const Underline     = TiptapExtensionUnderline.Underline || TiptapExtensionUnderline;
-  const Placeholder   = TiptapExtensionPlaceholder.Placeholder || TiptapExtensionPlaceholder;
-  const Youtube       = TiptapExtensionYoutube.Youtube || TiptapExtensionYoutube;
+  const { Editor, StarterKit, Image, Link, Underline, Placeholder, Youtube } = window.Tiptap;
 
   tiptapInstance = new Editor({
     element: document.querySelector('#tiptapEditor'),
