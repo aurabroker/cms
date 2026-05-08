@@ -9,7 +9,7 @@ const SB_CLIENT = supabase.createClient(SB_URL, SB_KEY);
 
 let currentRole = 'viewer';
 let currentUser = null;
-let quillInstance = null;
+let tiptapInstance = null;
 let autoSaveTimer = null;
 let editorDirty = false;
 
@@ -274,53 +274,39 @@ async function uploadImageToSupabase(file) {
 
 
 // =============================================================================
-//  QUILL — inicjalizacja
+//  TIPTAP — inicjalizacja
 // =============================================================================
-function initQuill() {
-  if (typeof ImageResize !== 'undefined') {
-    Quill.register('modules/imageResize', ImageResize);
-  }
+function initTiptap() {
+  const { Editor } = TiptapCore;
+  const StarterKit    = TiptapStarterKit.StarterKit    || TiptapStarterKit;
+  const Image         = TiptapExtensionImage.Image     || TiptapExtensionImage;
+  const Link          = TiptapExtensionLink.Link       || TiptapExtensionLink;
+  const Underline     = TiptapExtensionUnderline.Underline || TiptapExtensionUnderline;
+  const Placeholder   = TiptapExtensionPlaceholder.Placeholder || TiptapExtensionPlaceholder;
+  const Youtube       = TiptapExtensionYoutube.Youtube || TiptapExtensionYoutube;
 
-  const modules = {
-    toolbar: [
-      [{ header: [2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      ['link', 'image', 'video'],
-      ['clean'],
+  tiptapInstance = new Editor({
+    element: document.querySelector('#tiptapEditor'),
+    extensions: [
+      StarterKit,
+      Image,
+      Link.configure({ openOnClick: false }),
+      Underline,
+      Placeholder.configure({ placeholder: 'Zacznij pisać swój artykuł tutaj...' }),
+      Youtube,
     ],
-  };
-
-  if (typeof ImageResize !== 'undefined') {
-    modules.imageResize = { parchment: Quill.import('parchment') };
-  }
-
-  quillInstance = new Quill('#quillEditor', {
-    theme: 'snow',
-    placeholder: 'Zacznij pisać swój artykuł tutaj...',
-    modules,
-  });
-
-  // Toolbar image button — otwiera file picker, wgrywa do Supabase Storage
-  quillInstance.getModule('toolbar').addHandler('image', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async () => {
-      const file = input.files[0];
-      if (!file) return;
-      const url = await uploadImageToSupabase(file);
-      if (!url) return;
-      const range = quillInstance.getSelection(true);
-      quillInstance.insertEmbed(range.index, 'image', url, 'user');
-      quillInstance.setSelection(range.index + 1);
-    };
-    input.click();
+    content: '',
+    onUpdate: () => {
+      editorDirty = true;
+      updateTiptapToolbar();
+    },
+    onSelectionUpdate: () => {
+      updateTiptapToolbar();
+    },
   });
 
   // Paste — przechwytuje obrazy ze schowka i wgrywa do Supabase Storage
-  quillInstance.root.addEventListener('paste', async (e) => {
+  tiptapInstance.view.dom.addEventListener('paste', async (e) => {
     const items = (e.clipboardData || window.clipboardData)?.items;
     if (!items) return;
     for (const item of Array.from(items)) {
@@ -328,16 +314,63 @@ function initQuill() {
         e.preventDefault();
         const file = item.getAsFile();
         const url = await uploadImageToSupabase(file);
-        if (!url) return;
-        const range = quillInstance.getSelection(true);
-        quillInstance.insertEmbed(range ? range.index : 0, 'image', url, 'user');
+        if (url) tiptapInstance.chain().focus().setImage({ src: url }).run();
         return;
       }
     }
   });
+}
 
-  // Śledź zmiany do auto-save
-  quillInstance.on('text-change', () => { editorDirty = true; });
+function tiptapCmd(cmd, args) {
+  if (!tiptapInstance) return;
+  const chain = tiptapInstance.chain().focus();
+  if (args) chain[cmd](args).run();
+  else chain[cmd]().run();
+}
+
+function tiptapSetLink() {
+  if (!tiptapInstance) return;
+  const prev = tiptapInstance.getAttributes('link').href || '';
+  const url  = prompt('Wpisz URL linku:', prev);
+  if (url === null) return;
+  if (url === '') tiptapInstance.chain().focus().unsetLink().run();
+  else tiptapInstance.chain().focus().setLink({ href: url }).run();
+}
+
+function tiptapInsertImage() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const url = await uploadImageToSupabase(file);
+    if (url) tiptapInstance.chain().focus().setImage({ src: url }).run();
+  };
+  input.click();
+}
+
+function tiptapInsertYoutube() {
+  const url = prompt('Wpisz URL YouTube:');
+  if (!url) return;
+  tiptapInstance.chain().focus().setYoutubeVideo({ src: url }).run();
+}
+
+function tiptapClearFormat() {
+  if (!tiptapInstance) return;
+  tiptapInstance.chain().focus().clearNodes().unsetAllMarks().run();
+}
+
+function updateTiptapToolbar() {
+  if (!tiptapInstance) return;
+  document.querySelectorAll('#tiptapToolbar .tb-btn[data-active-check]').forEach(btn => {
+    try {
+      const parsed = JSON.parse(btn.dataset.activeCheck);
+      const name   = parsed[0];
+      const attrs  = parsed[1] || {};
+      btn.classList.toggle('is-active', tiptapInstance.isActive(name, attrs));
+    } catch (_) {}
+  });
 }
 
 
@@ -388,7 +421,7 @@ async function runAutoSave() {
 
   setAutoSaveIndicator('saving', 'Automatyczne zapisywanie...');
 
-  const contentHtml  = quillInstance.root.innerHTML;
+  const contentHtml  = tiptapInstance.getHTML();
   const excerpt      = document.getElementById('cmsExcerpt').value.trim();
   const tagsStr      = document.getElementById('cmsTags').value.trim();
   const tags         = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -641,7 +674,7 @@ function openNewArticleModal() {
     document.getElementById(p.id).checked = (p.value === 'AuraBenefits');
   });
 
-  quillInstance.root.innerHTML = '';
+  tiptapInstance.commands.setContent('');
   openModal('modal-article');
   startAutoSave();
 }
@@ -665,7 +698,7 @@ async function editArticleInCms(id) {
     document.getElementById(p.id).checked = platforms.includes(p.value);
   });
 
-  quillInstance.root.innerHTML = data.content;
+  tiptapInstance.commands.setContent(data.content || '');
   openModal('modal-article');
   startAutoSave();
 }
@@ -677,16 +710,16 @@ async function saveArticle(desiredStatus) {
   const title        = document.getElementById('cmsTitle').value.trim();
   const excerpt      = document.getElementById('cmsExcerpt').value.trim();
   const tagsStr      = document.getElementById('cmsTags').value.trim();
-  const contentHtml  = quillInstance.root.innerHTML;
+  const contentHtml  = tiptapInstance.getHTML();
   const thumbnailUrl = document.getElementById('cmsThumbnail').value.trim();
 
   const platforms = ALL_PLATFORMS
     .filter(p => document.getElementById(p.id).checked)
     .map(p => p.value);
 
-  if (!platforms.length)             return alert('Wybierz przynajmniej jedno miejsce publikacji.');
-  if (!title)                        return alert('Podaj tytuł artykułu.');
-  if (contentHtml === '<p><br></p>') return alert('Artykuł nie może być pusty.');
+  if (!platforms.length)          return alert('Wybierz przynajmniej jedno miejsce publikacji.');
+  if (!title)                     return alert('Podaj tytuł artykułu.');
+  if (tiptapInstance.isEmpty)     return alert('Artykuł nie może być pusty.');
 
   const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
 
@@ -803,7 +836,7 @@ function closeModal(id) {
 window.onload = async () => {
   lucide.createIcons();
   initThemeToggle();
-  initQuill();
+  initTiptap();
 
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {

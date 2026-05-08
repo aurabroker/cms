@@ -582,40 +582,75 @@ button { font-family: inherit; }
 }
 
 
-/* ── QUILL EDYTOR ────────────────────────────────────────────────────────── */
-.ql-editor {
+/* ── TIPTAP EDYTOR ───────────────────────────────────────────────────────── */
+.tiptap-wrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.tiptap-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--color-surface-offset);
+  border-bottom: 1px solid var(--color-border);
+}
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 5px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  user-select: none;
+}
+.tb-btn:hover { background: var(--color-border); color: var(--color-text); }
+.tb-btn.is-active { background: var(--color-accent); color: #fff; }
+.tb-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--color-border);
+  margin: 0 4px;
+  display: inline-block;
+}
+#tiptapEditor .ProseMirror {
   min-height: 300px;
+  padding: 14px 16px;
   font-size: 15px;
   font-family: 'Inter', sans-serif;
   color: var(--color-text);
+  outline: none;
 }
-.ql-editor h2 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
-.ql-editor h3 { font-size: 1.25em; font-weight: bold; margin-bottom: 0.5em; }
-.ql-editor p  { margin-bottom: 1em; }
-
-.ql-container {
-  border-bottom-left-radius: var(--radius-md) !important;
-  border-bottom-right-radius: var(--radius-md) !important;
-  border-color: var(--color-border) !important;
+#tiptapEditor .ProseMirror p { margin-bottom: 1em; }
+#tiptapEditor .ProseMirror h2 { font-size: 1.5em; font-weight: 700; margin-bottom: 0.5em; }
+#tiptapEditor .ProseMirror h3 { font-size: 1.25em; font-weight: 700; margin-bottom: 0.5em; }
+#tiptapEditor .ProseMirror ul { list-style: disc; padding-left: 1.5em; margin-bottom: 1em; }
+#tiptapEditor .ProseMirror ol { list-style: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+#tiptapEditor .ProseMirror blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1em;
+  color: var(--color-text-muted);
+  margin-bottom: 1em;
 }
-.ql-toolbar {
-  border-top-left-radius: var(--radius-md) !important;
-  border-top-right-radius: var(--radius-md) !important;
-  border-color: var(--color-border) !important;
-  background: var(--color-surface-offset);
+#tiptapEditor .ProseMirror a { color: var(--color-accent); text-decoration: underline; }
+#tiptapEditor .ProseMirror img { max-width: 100%; cursor: pointer; border-radius: var(--radius-sm); }
+#tiptapEditor .ProseMirror iframe { max-width: 100%; border-radius: var(--radius-sm); }
+#tiptapEditor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-text-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
-.ql-toolbar button {
-  width: 28px !important; height: 24px !important;
-  display: inline-flex !important;
-  align-items: center !important; justify-content: center !important;
-}
-.ql-toolbar button svg { width: 18px !important; height: 18px !important; display: inline-block !important; }
-.ql-toolbar .ql-stroke { stroke: var(--color-text-muted); }
-.ql-toolbar .ql-fill   { fill:   var(--color-text-muted); }
-.ql-toolbar button:hover .ql-stroke,
-.ql-toolbar button.ql-active .ql-stroke { stroke: var(--color-accent); }
-.ql-toolbar button:hover .ql-fill,
-.ql-toolbar button.ql-active .ql-fill   { fill:   var(--color-accent); }
 
 
 /* ── MODAL FULLSCREEN ────────────────────────────────────────────────────── */
@@ -641,8 +676,6 @@ button { font-family: inherit; }
 .autosave-indicator.saved  { color: var(--color-success); }
 .autosave-indicator.error  { color: var(--color-error); }
 
-/* ── QUILL IMAGE RESIZE ──────────────────────────────────────────────────── */
-.ql-editor img { max-width: 100%; cursor: pointer; }
 
 /* ── SCROLLBAR ───────────────────────────────────────────────────────────── */
 .custom-scroll::-webkit-scrollbar         { width: 5px; height: 5px; }
