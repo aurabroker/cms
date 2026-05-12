@@ -273,6 +273,43 @@ async function uploadImageToSupabase(file) {
 }
 
 
+async function uploadPreviewImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const url = await uploadImageToSupabase(file);
+  if (!url) return;
+  document.getElementById('cmsPreviewImage').value = url;
+  const thumb = document.getElementById('previewImageThumb');
+  thumb.style.backgroundImage = `url('${url}')`;
+  thumb.classList.remove('hidden');
+  document.getElementById('previewImageClearBtn').style.display = '';
+  input.value = '';
+}
+
+function clearPreviewImage() {
+  document.getElementById('cmsPreviewImage').value = '';
+  const thumb = document.getElementById('previewImageThumb');
+  thumb.style.backgroundImage = '';
+  thumb.classList.add('hidden');
+  document.getElementById('previewImageClearBtn').style.display = 'none';
+}
+
+function setPreviewImageUI(url) {
+  document.getElementById('cmsPreviewImage').value = url || '';
+  const thumb = document.getElementById('previewImageThumb');
+  const clearBtn = document.getElementById('previewImageClearBtn');
+  if (url) {
+    thumb.style.backgroundImage = `url('${url}')`;
+    thumb.classList.remove('hidden');
+    clearBtn.style.display = '';
+  } else {
+    thumb.style.backgroundImage = '';
+    thumb.classList.add('hidden');
+    clearBtn.style.display = 'none';
+  }
+}
+
+
 // =============================================================================
 //  TIPTAP — inicjalizacja
 // =============================================================================
@@ -419,14 +456,16 @@ async function runAutoSave() {
   const excerpt      = document.getElementById('cmsExcerpt').value.trim();
   const tagsStr      = document.getElementById('cmsTags').value.trim();
   const tags         = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
-  const thumbnailUrl = document.getElementById('cmsThumbnail').value.trim();
-  const platforms    = ALL_PLATFORMS
+  const thumbnailUrl    = document.getElementById('cmsThumbnail').value.trim();
+  const previewImageUrl = document.getElementById('cmsPreviewImage').value.trim();
+  const platforms       = ALL_PLATFORMS
     .filter(p => document.getElementById(p.id).checked)
     .map(p => p.value);
 
   const { error } = await SB_CLIENT.from('aura_articles').update({
     title, excerpt, content: contentHtml, tags, platforms,
     thumbnail_url: thumbnailUrl || null,
+    preview_image_url: previewImageUrl || null,
   }).eq('id', id);
 
   if (!error) {
@@ -535,7 +574,7 @@ async function loadPublishedArticles() {
 
   const { data, error } = await SB_CLIENT
     .from('aura_articles')
-    .select('id, title, excerpt, tags, published_at, thumbnail_url')
+    .select('id, title, excerpt, tags, published_at, thumbnail_url, preview_image_url')
     .eq('status', 'published')
     .contains('platforms', ['AuraBenefits'])
     .order('published_at', { ascending: false });
@@ -551,7 +590,7 @@ async function loadPublishedArticles() {
   }
 
   grid.innerHTML = data.map(art => {
-    const thumb = youtubeThumbnail(art.thumbnail_url);
+    const thumb = art.preview_image_url || youtubeThumbnail(art.thumbnail_url);
     const thumbHtml = thumb
       ? `<div class="blog-card-thumb" style="background-image:url('${thumb}')">
            <div class="blog-card-thumb-overlay"></div>
@@ -663,6 +702,7 @@ function openNewArticleModal() {
   document.getElementById('cmsThumbnail').value = '';
   document.getElementById('thumbPreview').classList.add('hidden');
   document.getElementById('thumbPreview').style.backgroundImage = '';
+  setPreviewImageUI(null);
 
   ALL_PLATFORMS.forEach(p => {
     document.getElementById(p.id).checked = (p.value === 'AuraBenefits');
@@ -686,6 +726,7 @@ async function editArticleInCms(id) {
   document.getElementById('cmsTags').value      = (data.tags || []).join(', ');
   document.getElementById('cmsThumbnail').value = data.thumbnail_url || '';
   previewThumbnail(data.thumbnail_url || '');
+  setPreviewImageUI(data.preview_image_url || null);
 
   const platforms = data.platforms || ['AuraBenefits'];
   ALL_PLATFORMS.forEach(p => {
@@ -705,7 +746,8 @@ async function saveArticle(desiredStatus) {
   const excerpt      = document.getElementById('cmsExcerpt').value.trim();
   const tagsStr      = document.getElementById('cmsTags').value.trim();
   const contentHtml  = tiptapInstance.getHTML();
-  const thumbnailUrl = document.getElementById('cmsThumbnail').value.trim();
+  const thumbnailUrl    = document.getElementById('cmsThumbnail').value.trim();
+  const previewImageUrl = document.getElementById('cmsPreviewImage').value.trim();
 
   const platforms = ALL_PLATFORMS
     .filter(p => document.getElementById(p.id).checked)
@@ -721,6 +763,7 @@ async function saveArticle(desiredStatus) {
     title, excerpt, content: contentHtml,
     tags, platforms,
     thumbnail_url: thumbnailUrl || null,
+    preview_image_url: previewImageUrl || null,
     status: desiredStatus,
     ai_generated: false,
   };

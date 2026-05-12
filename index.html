@@ -558,6 +558,22 @@
       </div>
 
       <div class="form-field">
+        <label class="form-label">Zdjęcie zapowiedzi artykułu</label>
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div id="previewImageThumb" class="thumb-preview hidden"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;flex:1">
+            <div style="display:flex;gap:8px">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('previewImageInput').click()">Wgraj zdjęcie</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="previewImageClearBtn" onclick="clearPreviewImage()" style="display:none">Usuń</button>
+            </div>
+            <input type="file" id="previewImageInput" accept="image/*" style="display:none" onchange="uploadPreviewImage(this)">
+            <input type="hidden" id="cmsPreviewImage">
+          </div>
+        </div>
+        <p class="form-hint">Zdjęcie pojawi się jako ilustracja zapowiedzi na liście artykułów.</p>
+      </div>
+
+      <div class="form-field">
         <label class="form-label">Link do YouTube (miniaturka na liście artykułów)</label>
         <div style="display:flex;gap:10px;align-items:flex-start">
           <input type="url" id="cmsThumbnail" class="form-input"
@@ -565,7 +581,7 @@
                  oninput="previewThumbnail(this.value)">
           <div id="thumbPreview" class="thumb-preview hidden"></div>
         </div>
-        <p class="form-hint">Miniaturka pojawi się automatycznie na karcie artykułu.</p>
+        <p class="form-hint">Miniaturka z YouTube pojawi się na karcie artykułu (jeśli brak zdjęcia powyżej).</p>
       </div>
 
       <div class="form-field">
