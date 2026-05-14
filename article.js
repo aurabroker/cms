@@ -361,42 +361,8 @@ function cancelEdit() {
 
 
 // =============================================================================
-//  LOGOWANIE
+//  AUTORYZACJA
 // =============================================================================
-function showLoginScreen() {
-  document.getElementById('articleLoginScreen').classList.remove('hidden');
-  document.getElementById('articleEditorWrap').classList.add('hidden');
-}
-
-function showEditor() {
-  document.getElementById('articleLoginScreen').classList.add('hidden');
-  document.getElementById('articleEditorWrap').classList.remove('hidden');
-}
-
-async function articleDoLogin() {
-  const email  = document.getElementById('articleLoginEmail').value.trim();
-  const pass   = document.getElementById('articleLoginPassword').value;
-  const errEl  = document.getElementById('articleLoginError');
-  const btn    = document.getElementById('articleLoginBtn');
-
-  errEl.classList.add('hidden');
-  btn.textContent = 'Logowanie...';
-  btn.disabled = true;
-
-  const { error } = await SB_CLIENT.auth.signInWithPassword({ email, password: pass });
-
-  btn.textContent = 'Zaloguj się';
-  btn.disabled = false;
-
-  if (error) {
-    errEl.textContent = 'Błąd: ' + error.message;
-    errEl.classList.remove('hidden');
-    return;
-  }
-
-  await bootEditor();
-}
-
 async function checkAdminAccess() {
   const { data: { session } } = await SB_CLIENT.auth.getSession();
   if (!session) return false;
@@ -410,21 +376,16 @@ async function checkAdminAccess() {
   return profile?.rola === 'admin';
 }
 
+function redirectToLogin() {
+  const returnTo = encodeURIComponent(window.location.href);
+  window.location.href = `index.html?returnTo=${returnTo}`;
+}
+
 
 // =============================================================================
 //  INIT EDYTORA
 // =============================================================================
 async function bootEditor() {
-  const isAdmin = await checkAdminAccess();
-  if (!isAdmin) {
-    showLoginScreen();
-    const errEl = document.getElementById('articleLoginError');
-    errEl.textContent = 'Brak uprawnień administratora.';
-    errEl.classList.remove('hidden');
-    return;
-  }
-
-  showEditor();
   lucide.createIcons();
 
   if (!tiptapInstance) initTiptap();
@@ -481,9 +442,9 @@ async function bootEditor() {
 
 window.onload = async () => {
   const isAdmin = await checkAdminAccess();
-  if (isAdmin) {
-    await bootEditor();
+  if (!isAdmin) {
+    redirectToLogin();
   } else {
-    showLoginScreen();
+    await bootEditor();
   }
 };

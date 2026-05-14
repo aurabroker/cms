@@ -144,7 +144,7 @@ async function checkAuthAndUpdateUI() {
   if (!session) {
     currentRole = 'viewer';
     currentUser = null;
-    updateNavForRole();
+    showLoginScreen();
     return;
   }
 
@@ -156,7 +156,14 @@ async function checkAuthAndUpdateUI() {
     .eq('id', session.user.id)
     .single();
 
-  currentRole = (!error && profile?.rola === 'admin') ? 'admin' : 'viewer';
+  if (!error && profile?.rola === 'admin') {
+    currentRole = 'admin';
+    showApp();
+  } else {
+    currentRole = 'viewer';
+    showLoginScreen();
+  }
+
   updateNavForRole();
 }
 
@@ -199,9 +206,16 @@ async function doLogin() {
     return;
   }
 
-  closeLoginScreen();
   await checkAuthAndUpdateUI();
-  if (currentRole === 'admin') navTo('dashboard');
+
+  if (currentRole === 'admin') {
+    const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+    if (returnTo) {
+      window.location.href = decodeURIComponent(returnTo);
+    } else {
+      navTo('dashboard');
+    }
+  }
 }
 
 async function doLogout() {
@@ -209,13 +223,18 @@ async function doLogout() {
   currentRole = 'viewer';
   currentUser = null;
   updateNavForRole();
-  navTo('blog');
+  showLoginScreen();
 }
 
-function showLoginScreen()  { document.getElementById('loginScreen').classList.remove('hidden'); }
-function closeLoginScreen() {
+function showLoginScreen() {
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('appContainer').classList.add('hidden');
+}
+
+function showApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('loginError').classList.add('hidden');
+  document.getElementById('appContainer').classList.remove('hidden');
 }
 
 
