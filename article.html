@@ -30,7 +30,34 @@
 </head>
 <body class="article-editor-page">
 
-<div class="article-editor-wrap">
+<!-- ── EKRAN LOGOWANIA ────────────────────────────────────────────────────── -->
+<div id="articleLoginScreen" class="login-screen hidden">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-logo">A</div>
+      <div>
+        <div class="login-title">AuraHUB <span class="login-cms-label">CMS</span></div>
+      </div>
+    </div>
+    <p class="login-hint">Zaloguj się, aby edytować artykuł.</p>
+    <div class="form-field">
+      <label class="form-label">E-mail</label>
+      <input type="email" id="articleLoginEmail" autocomplete="email" class="form-input"
+             placeholder="admin@auraconsulting.pl">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Hasło</label>
+      <input type="password" id="articleLoginPassword" autocomplete="current-password" class="form-input"
+             placeholder="••••••••" onkeydown="if(event.key==='Enter') articleDoLogin()">
+    </div>
+    <p id="articleLoginError" class="login-error hidden"></p>
+    <button onclick="articleDoLogin()" id="articleLoginBtn" class="btn btn-primary" style="width:100%;margin-top:16px">
+      Zaloguj się
+    </button>
+  </div>
+</div>
+
+<div class="article-editor-wrap hidden" id="articleEditorWrap">
 
   <!-- NAGŁÓWEK -->
   <div class="article-editor-header">
@@ -208,7 +235,7 @@
     <span class="modal-footer-hint">Wklej (Ctrl+V) lub przeciągnij zdjęcia do edytora — zostaną automatycznie wgrane.</span>
   </div>
 
-</div>
+</div><!-- /article-editor-wrap -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>

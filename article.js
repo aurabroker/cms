@@ -361,19 +361,45 @@ function cancelEdit() {
 
 
 // =============================================================================
-//  INIT
+//  LOGOWANIE
 // =============================================================================
-async function initEditor() {
-  lucide.createIcons();
+function showLoginScreen() {
+  document.getElementById('articleLoginScreen').classList.remove('hidden');
+  document.getElementById('articleEditorWrap').classList.add('hidden');
+}
 
-  const params  = new URLSearchParams(window.location.search);
-  const articleId = params.get('id') || null;
+function showEditor() {
+  document.getElementById('articleLoginScreen').classList.add('hidden');
+  document.getElementById('articleEditorWrap').classList.remove('hidden');
+}
 
-  const { data: { session } } = await SB_CLIENT.auth.getSession();
-  if (!session) {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:Inter,sans-serif"><p>Brak sesji. Zaloguj się w głównym oknie CMS.</p><a href="index.html">Wróć do CMS</a></div>';
+async function articleDoLogin() {
+  const email  = document.getElementById('articleLoginEmail').value.trim();
+  const pass   = document.getElementById('articleLoginPassword').value;
+  const errEl  = document.getElementById('articleLoginError');
+  const btn    = document.getElementById('articleLoginBtn');
+
+  errEl.classList.add('hidden');
+  btn.textContent = 'Logowanie...';
+  btn.disabled = true;
+
+  const { error } = await SB_CLIENT.auth.signInWithPassword({ email, password: pass });
+
+  btn.textContent = 'Zaloguj się';
+  btn.disabled = false;
+
+  if (error) {
+    errEl.textContent = 'Błąd: ' + error.message;
+    errEl.classList.remove('hidden');
     return;
   }
+
+  await bootEditor();
+}
+
+async function checkAdminAccess() {
+  const { data: { session } } = await SB_CLIENT.auth.getSession();
+  if (!session) return false;
 
   const { data: profile } = await SB_CLIENT
     .from('profiles')
@@ -381,12 +407,30 @@ async function initEditor() {
     .eq('id', session.user.id)
     .single();
 
-  if (profile?.rola !== 'admin') {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:Inter,sans-serif"><p>Brak uprawnień administratora.</p><a href="index.html">Wróć do CMS</a></div>';
+  return profile?.rola === 'admin';
+}
+
+
+// =============================================================================
+//  INIT EDYTORA
+// =============================================================================
+async function bootEditor() {
+  const isAdmin = await checkAdminAccess();
+  if (!isAdmin) {
+    showLoginScreen();
+    const errEl = document.getElementById('articleLoginError');
+    errEl.textContent = 'Brak uprawnień administratora.';
+    errEl.classList.remove('hidden');
     return;
   }
 
-  initTiptap();
+  showEditor();
+  lucide.createIcons();
+
+  if (!tiptapInstance) initTiptap();
+
+  const params    = new URLSearchParams(window.location.search);
+  const articleId = params.get('id') || null;
 
   if (articleId) {
     document.getElementById('articlePageTitle').textContent = 'Edycja Artykułu';
@@ -435,4 +479,11 @@ async function initEditor() {
   });
 }
 
-window.onload = initEditor;
+window.onload = async () => {
+  const isAdmin = await checkAdminAccess();
+  if (isAdmin) {
+    await bootEditor();
+  } else {
+    showLoginScreen();
+  }
+};
