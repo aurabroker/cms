@@ -404,8 +404,9 @@ button { font-family: inherit; }
   margin-bottom: 16px;
 }
 .platform-picker-rozwod {
-  background: rgba(220, 38, 38, 0.04);
-  border-color: rgba(220, 38, 38, 0.2);
+  background: rgba(220, 38, 38, 0.07);
+  border-color: rgba(220, 38, 38, 0.35);
+  border-width: 2px;
 }
 .platform-grid {
   display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
