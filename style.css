@@ -403,6 +403,10 @@ button { font-family: inherit; }
   padding: 16px;
   margin-bottom: 16px;
 }
+.platform-picker-rozwod {
+  background: rgba(220, 38, 38, 0.04);
+  border-color: rgba(220, 38, 38, 0.2);
+}
 .platform-grid {
   display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
 }
