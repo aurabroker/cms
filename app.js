@@ -31,6 +31,8 @@ const PLAT_CLASS = {
   'RozwodMokotow.pl':      'd-rmokot',
   'RozwodLomianki.pl':     'd-rlomian',
   'RozwodWola.pl':         'd-rwola',
+  'RozwodBemowo.pl':       'd-rbemowo',
+  'RozwodJablonna.pl':     'd-rjablon',
 };
 
 // Mapowanie domen na wartości platform w bazie
@@ -66,6 +68,10 @@ const HOSTNAME_TO_PLATFORM = {
   'www.rozwodlomianki.pl':      'RozwodLomianki.pl',
   'rozwodwola.pl':              'RozwodWola.pl',
   'www.rozwodwola.pl':          'RozwodWola.pl',
+  'rozwodbemowo.pl':            'RozwodBemowo.pl',
+  'www.rozwodbemowo.pl':        'RozwodBemowo.pl',
+  'rozwodjablonna.pl':          'RozwodJablonna.pl',
+  'www.rozwodjablonna.pl':      'RozwodJablonna.pl',
 };
 
 function getCurrentPlatform() {
@@ -89,6 +95,8 @@ const ALL_PLATFORMS = [
   { id: 'plat_rmokot',  value: 'RozwodMokotow.pl' },
   { id: 'plat_rlomian', value: 'RozwodLomianki.pl' },
   { id: 'plat_rwola',   value: 'RozwodWola.pl' },
+  { id: 'plat_rbemowo', value: 'RozwodBemowo.pl' },
+  { id: 'plat_rjablon', value: 'RozwodJablonna.pl' },
 ];
 
 const PAGE_TITLES = {

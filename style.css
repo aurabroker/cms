@@ -34,6 +34,8 @@
   --c-rmokot:  #7c3aed;
   --c-rlomian: #be185d;
   --c-rwola:   #9333ea;
+  --c-rbemowo: #0f766e;
+  --c-rjablon: #be123c;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
@@ -331,6 +333,8 @@ button { font-family: inherit; }
 .d-rmokot  { background: rgba(124, 58,  237, 0.1);  color: var(--c-rmokot); }
 .d-rlomian { background: rgba(190, 24,  93,  0.1);  color: var(--c-rlomian); }
 .d-rwola   { background: rgba(147, 51,  234, 0.1);  color: var(--c-rwola); }
+.d-rbemowo { background: rgba(15,  118, 110, 0.1);  color: var(--c-rbemowo); }
+.d-rjablon { background: rgba(190, 18,  60,  0.1);  color: var(--c-rjablon); }
 
 
 /* ── BUTTONS ─────────────────────────────────────────────────────────────── */
