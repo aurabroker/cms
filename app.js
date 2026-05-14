@@ -23,6 +23,26 @@ const PLAT_CLASS = {
   'Idzik.org.pl':     'd-idzik',
 };
 
+// Mapowanie domen na wartości platform w bazie
+const HOSTNAME_TO_PLATFORM = {
+  'aurabenefits.pl':      'AuraBenefits',
+  'www.aurabenefits.pl':  'AuraBenefits',
+  'auraconsulting.pl':    'AuraConsulting.pl',
+  'www.auraconsulting.pl':'AuraConsulting.pl',
+  'grupowe.pro':          'Grupowe.pro',
+  'www.grupowe.pro':      'Grupowe.pro',
+  'utratadochodu.pl':     'UtrataDochodu.pl',
+  'www.utratadochodu.pl': 'UtrataDochodu.pl',
+  'gwarancje.pro':        'Gwarancje.pro',
+  'www.gwarancje.pro':    'Gwarancje.pro',
+  'idzik.org.pl':         'Idzik.org.pl',
+  'www.idzik.org.pl':     'Idzik.org.pl',
+};
+
+function getCurrentPlatform() {
+  return HOSTNAME_TO_PLATFORM[window.location.hostname] || null;
+}
+
 const ALL_PLATFORMS = [
   { id: 'plat_aurabenefits',   value: 'AuraBenefits' },
   { id: 'plat_auraconsulting', value: 'AuraConsulting.pl' },
@@ -485,11 +505,15 @@ async function loadDashboard() {
 //  CZYTNIK ARTYKUŁÓW
 // =============================================================================
 async function openArticle(id, skipHashChange = false) {
-  const { data, error } = await SB_CLIENT
-    .from('aura_articles')
-    .select('*')
-    .eq('id', id)
-    .single();
+  let query = SB_CLIENT.from('aura_articles').select('*').eq('id', id);
+
+  if (currentRole !== 'admin') {
+    query = query.eq('status', 'published');
+    const platform = getCurrentPlatform();
+    if (platform) query = query.contains('platforms', [platform]);
+  }
+
+  const { data, error } = await query.single();
 
   if (!data || error) {
     alert('Nie znaleziono artykułu.');
@@ -533,12 +557,16 @@ async function loadPublishedArticles() {
   const grid = document.getElementById('blogGrid');
   grid.innerHTML = '<div class="empty-state">Pobieranie artykułów...</div>';
 
-  const { data, error } = await SB_CLIENT
+  const platform = getCurrentPlatform();
+  let query = SB_CLIENT
     .from('aura_articles')
     .select('id, title, excerpt, tags, published_at, thumbnail_url')
     .eq('status', 'published')
-    .contains('platforms', ['AuraBenefits'])
     .order('published_at', { ascending: false });
+
+  if (platform) query = query.contains('platforms', [platform]);
+
+  const { data, error } = await query;
 
   if (error || !data) {
     grid.innerHTML = '<div class="empty-state empty-state-error">Błąd połączenia z bazą danych.</div>';
