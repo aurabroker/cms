@@ -23,24 +23,20 @@ const PLAT_CLASS = {
   'Idzik.org.pl':     'd-idzik',
 };
 
-// Mapowanie domen na wartości platform w bazie
-const HOSTNAME_TO_PLATFORM = {
-  'aurabenefits.pl':      'AuraBenefits',
-  'www.aurabenefits.pl':  'AuraBenefits',
-  'auraconsulting.pl':    'AuraConsulting.pl',
-  'www.auraconsulting.pl':'AuraConsulting.pl',
-  'grupowe.pro':          'Grupowe.pro',
-  'www.grupowe.pro':      'Grupowe.pro',
-  'utratadochodu.pl':     'UtrataDochodu.pl',
-  'www.utratadochodu.pl': 'UtrataDochodu.pl',
-  'gwarancje.pro':        'Gwarancje.pro',
-  'www.gwarancje.pro':    'Gwarancje.pro',
-  'idzik.org.pl':         'Idzik.org.pl',
-  'www.idzik.org.pl':     'Idzik.org.pl',
-};
+// Mapowanie domen na wartości platform w bazie (sprawdzane przez endsWith)
+const DOMAIN_PLATFORM_MAP = [
+  ['aurabenefits.pl',   'AuraBenefits'],
+  ['auraconsulting.pl', 'AuraConsulting.pl'],
+  ['grupowe.pro',       'Grupowe.pro'],
+  ['utratadochodu.pl',  'UtrataDochodu.pl'],
+  ['gwarancje.pro',     'Gwarancje.pro'],
+  ['idzik.org.pl',      'Idzik.org.pl'],
+];
 
 function getCurrentPlatform() {
-  return HOSTNAME_TO_PLATFORM[window.location.hostname] || null;
+  const hostname = window.location.hostname;
+  const match = DOMAIN_PLATFORM_MAP.find(([domain]) => hostname.endsWith(domain));
+  return match ? match[1] : null;
 }
 
 const ALL_PLATFORMS = [
