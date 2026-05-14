@@ -18,12 +18,24 @@
   --color-accent:         #6366f1;
 
   /* Kolory domen */
-  --c-benefits: #6366f1;
-  --c-aura:     #0f172a;
-  --c-gwar:     #01696f;
-  --c-utrata:   #d97706;
-  --c-idzik:    #8b5cf6;
-  --c-grupowe:  #3b82f6;
+  --c-benefits:  #6366f1;
+  --c-aura:      #0f172a;
+  --c-gwar:      #01696f;
+  --c-utrata:    #d97706;
+  --c-idzik:     #8b5cf6;
+  --c-grupowe:   #3b82f6;
+  /* Witryny rozwodowe */
+  --c-rozwod:    #dc2626;
+  --c-alimenty:  #ea580c;
+  --c-separacja: #ca8a04;
+  --c-prodzinn:  #16a34a;
+  --c-bezorzec:  #0891b2;
+  --c-podzial:   #7c3aed;
+  --c-opieka:    #be185d;
+  --c-adwrodzin: #be123c;
+  --c-mediator:  #0f766e;
+  --c-rozkrok:   #1d4ed8;
+  --c-szybkroz:  #9333ea;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
@@ -305,12 +317,24 @@ button { font-family: inherit; }
   border-radius: 5px; font-weight: 600;
   display: inline-block; white-space: nowrap;
 }
-.d-benefits { background: rgba(99,  102, 241, 0.1); color: var(--c-benefits); }
-.d-aura     { background: rgba(15,  23,  42,  0.08); color: var(--c-aura); }
-.d-gwar     { background: rgba(1,   105, 111, 0.1); color: var(--c-gwar); }
-.d-utrata   { background: rgba(217, 119, 6,   0.1); color: var(--c-utrata); }
-.d-idzik    { background: rgba(139, 92,  246, 0.1); color: var(--c-idzik); }
-.d-grupowe  { background: rgba(59,  130, 246, 0.1); color: var(--c-grupowe); }
+.d-benefits  { background: rgba(99,  102, 241, 0.1);  color: var(--c-benefits); }
+.d-aura      { background: rgba(15,  23,  42,  0.08); color: var(--c-aura); }
+.d-gwar      { background: rgba(1,   105, 111, 0.1);  color: var(--c-gwar); }
+.d-utrata    { background: rgba(217, 119, 6,   0.1);  color: var(--c-utrata); }
+.d-idzik     { background: rgba(139, 92,  246, 0.1);  color: var(--c-idzik); }
+.d-grupowe   { background: rgba(59,  130, 246, 0.1);  color: var(--c-grupowe); }
+/* Witryny rozwodowe */
+.d-rozwod    { background: rgba(220, 38,  38,  0.1);  color: var(--c-rozwod); }
+.d-alimenty  { background: rgba(234, 88,  12,  0.1);  color: var(--c-alimenty); }
+.d-separacja { background: rgba(202, 138, 4,   0.1);  color: var(--c-separacja); }
+.d-prodzinn  { background: rgba(22,  163, 74,  0.1);  color: var(--c-prodzinn); }
+.d-bezorzec  { background: rgba(8,   145, 178, 0.1);  color: var(--c-bezorzec); }
+.d-podzial   { background: rgba(124, 58,  237, 0.1);  color: var(--c-podzial); }
+.d-opieka    { background: rgba(190, 24,  93,  0.1);  color: var(--c-opieka); }
+.d-adwrodzin { background: rgba(190, 18,  60,  0.1);  color: var(--c-adwrodzin); }
+.d-mediator  { background: rgba(15,  118, 110, 0.1);  color: var(--c-mediator); }
+.d-rozkrok   { background: rgba(29,  78,  216, 0.1);  color: var(--c-rozkrok); }
+.d-szybkroz  { background: rgba(147, 51,  234, 0.1);  color: var(--c-szybkroz); }
 
 
 /* ── BUTTONS ─────────────────────────────────────────────────────────────── */
