@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self';
+          script-src 'self' 'unsafe-inline'
+            https://cdn.jsdelivr.net
+            https://cdnjs.cloudflare.com
+            https://static.cloudflareinsights.com;
+          style-src 'self' 'unsafe-inline'
+            https://fonts.googleapis.com;
+          font-src https://fonts.gstatic.com;
+          img-src 'self' data: blob: https://img.youtube.com https://kukvgsjrmrqtzhkszzum.supabase.co;
+          connect-src 'self'
+            https://kukvgsjrmrqtzhkszzum.supabase.co
+            https://cloudflareinsights.com
+            https://cdn.jsdelivr.net
+            https://cdnjs.cloudflare.com;
+          frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com;
+          object-src 'none';
+        ">
+  <title>Edytor Artykułu — AuraHUB CMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body class="article-editor-page">
+
+<div class="article-editor-wrap">
+
+  <!-- NAGŁÓWEK -->
+  <div class="article-editor-header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="brand-logo" style="flex-shrink:0;cursor:default">A</div>
+      <h2 class="modal-title" id="articlePageTitle">Edytor Artykułu</h2>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="autosave-indicator hidden" id="autosaveIndicator"></span>
+      <button onclick="cancelEdit()" class="btn btn-ghost">Anuluj</button>
+      <button onclick="saveArticle('draft')" class="btn btn-ghost btn-save-draft">Zapisz szkic</button>
+      <button onclick="saveArticle('published')" class="btn btn-primary">Opublikuj</button>
+    </div>
+  </div>
+
+  <!-- TREŚĆ FORMULARZA -->
+  <div class="article-editor-body custom-scroll">
+    <input type="hidden" id="cmsId">
+
+    <div class="form-row">
+      <div class="form-field" style="flex:2">
+        <label class="form-label">Tytuł artykułu</label>
+        <input type="text" id="cmsTitle" class="form-input"
+               placeholder="Wpisz chwytliwy tytuł...">
+      </div>
+      <div class="form-field" style="flex:1">
+        <label class="form-label">Tagi (po przecinku)</label>
+        <input type="text" id="cmsTags" class="form-input"
+               placeholder="np. HR, Ubezpieczenia">
+      </div>
+    </div>
+
+    <div class="platform-picker">
+      <label class="form-label" style="margin-bottom:10px">Gdzie publikować?</label>
+      <div class="platform-grid">
+        <label class="platform-option">
+          <input type="checkbox" id="plat_aurabenefits" value="AuraBenefits">
+          <span class="domain-tag d-benefits">AuraBenefits</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_auraconsulting" value="AuraConsulting.pl">
+          <span class="domain-tag d-aura">AuraConsulting.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_grupowe" value="Grupowe.pro">
+          <span class="domain-tag d-grupowe">Grupowe.pro</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_utratadochodu" value="UtrataDochodu.pl">
+          <span class="domain-tag d-utrata">UtrataDochodu.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_gwarancje" value="Gwarancje.pro">
+          <span class="domain-tag d-gwar">Gwarancje.pro</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_idzik" value="Idzik.org.pl">
+          <span class="domain-tag d-idzik">Idzik.org.pl</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="platform-picker platform-picker-rozwod">
+      <label class="form-label" style="margin-bottom:10px">Witryny rozwodowe</label>
+      <div class="platform-grid">
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rwaw" value="RozwodWaw.pl">
+          <span class="domain-tag d-rwaw">RozwodWaw.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rtarch" value="RozwodTarchomin.pl">
+          <span class="domain-tag d-rtarch">RozwodTarchomin.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rochota" value="RozwodOchota.pl">
+          <span class="domain-tag d-rochota">RozwodOchota.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rzolibz" value="RozwodZoliborz.pl">
+          <span class="domain-tag d-rzolibz">RozwodZoliborz.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rbielan" value="RozwodBielany.pl">
+          <span class="domain-tag d-rbielan">RozwodBielany.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rlegion" value="RozwodLegionowo.pl">
+          <span class="domain-tag d-rlegion">RozwodLegionowo.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rmokot" value="RozwodMokotow.pl">
+          <span class="domain-tag d-rmokot">RozwodMokotow.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rlomian" value="RozwodLomianki.pl">
+          <span class="domain-tag d-rlomian">RozwodLomianki.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rwola" value="RozwodWola.pl">
+          <span class="domain-tag d-rwola">RozwodWola.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rbemowo" value="RozwodBemowo.pl">
+          <span class="domain-tag d-rbemowo">RozwodBemowo.pl</span>
+        </label>
+        <label class="platform-option">
+          <input type="checkbox" id="plat_rjablon" value="RozwodJablonna.pl">
+          <span class="domain-tag d-rjablon">RozwodJablonna.pl</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">Zajawka</label>
+      <textarea id="cmsExcerpt" class="form-textarea" rows="2"
+                placeholder="Krótki wstęp zachęcający do kliknięcia..."></textarea>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">Link do YouTube (miniaturka na liście artykułów)</label>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <input type="url" id="cmsThumbnail" class="form-input"
+               placeholder="https://www.youtube.com/watch?v=..."
+               oninput="previewThumbnail(this.value)">
+        <div id="thumbPreview" class="thumb-preview hidden"></div>
+      </div>
+      <p class="form-hint">Miniaturka pojawi się automatycznie na karcie artykułu.</p>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">Zdjęcie na liście artykułów (własne)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <label class="btn btn-ghost btn-sm preview-img-btn">
+          Wybierz plik…
+          <input type="file" id="cmsPreviewImageFile" accept="image/*"
+                 style="display:none" onchange="handlePreviewImageUpload(this)">
+        </label>
+        <div id="previewImgThumb" class="thumb-preview hidden"></div>
+        <button type="button" id="previewImgClear" class="btn btn-ghost btn-sm"
+                onclick="clearPreviewImage()" style="display:none">✕ Usuń</button>
+      </div>
+      <input type="hidden" id="cmsPreviewImageUrl">
+      <p class="form-hint">Własne zdjęcie zastępuje miniaturkę YouTube na karcie bloga.</p>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label">Treść główna</label>
+      <div class="tiptap-wrap">
+        <div class="tiptap-toolbar" id="tiptapToolbar">
+          <button type="button" class="tb-btn" data-active-check='["heading",{"level":2}]' onclick="tiptapCmd('toggleHeading',{level:2})" title="Nagłówek H2">H2</button>
+          <button type="button" class="tb-btn" data-active-check='["heading",{"level":3}]' onclick="tiptapCmd('toggleHeading',{level:3})" title="Nagłówek H3">H3</button>
+          <span class="tb-sep"></span>
+          <button type="button" class="tb-btn" data-active-check='["bold"]' onclick="tiptapCmd('toggleBold')" title="Pogrubienie"><strong>B</strong></button>
+          <button type="button" class="tb-btn" data-active-check='["italic"]' onclick="tiptapCmd('toggleItalic')" title="Kursywa"><em>I</em></button>
+          <button type="button" class="tb-btn" data-active-check='["underline"]' onclick="tiptapCmd('toggleUnderline')" title="Podkreślenie"><u>U</u></button>
+          <button type="button" class="tb-btn" data-active-check='["strike"]' onclick="tiptapCmd('toggleStrike')" title="Przekreślenie"><s>S</s></button>
+          <span class="tb-sep"></span>
+          <button type="button" class="tb-btn" data-active-check='["blockquote"]' onclick="tiptapCmd('toggleBlockquote')" title="Cytat">❝</button>
+          <button type="button" class="tb-btn" data-active-check='["bulletList"]' onclick="tiptapCmd('toggleBulletList')" title="Lista punktowana">• —</button>
+          <button type="button" class="tb-btn" data-active-check='["orderedList"]' onclick="tiptapCmd('toggleOrderedList')" title="Lista numerowana">1.</button>
+          <span class="tb-sep"></span>
+          <button type="button" class="tb-btn" data-active-check='["link"]' onclick="tiptapSetLink()" title="Link">🔗</button>
+          <button type="button" class="tb-btn" onclick="tiptapInsertImage()" title="Wstaw zdjęcie">🖼</button>
+          <button type="button" class="tb-btn" onclick="tiptapInsertYoutube()" title="Wstaw YouTube">▶</button>
+          <span class="tb-sep"></span>
+          <button type="button" class="tb-btn" onclick="tiptapClearFormat()" title="Usuń formatowanie">✕</button>
+        </div>
+        <div id="tiptapEditor"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STOPKA -->
+  <div class="article-editor-footer">
+    <span class="modal-footer-hint">Wklej (Ctrl+V) lub przeciągnij zdjęcia do edytora — zostaną automatycznie wgrane.</span>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<script src="./tiptap.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+<script src="./article.js"></script>
+
+</body>
+</html>

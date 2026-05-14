@@ -9,9 +9,6 @@ const SB_CLIENT = supabase.createClient(SB_URL, SB_KEY);
 
 let currentRole = 'viewer';
 let currentUser = null;
-let tiptapInstance = null;
-let autoSaveTimer = null;
-let editorDirty = false;
 
 // Mapowanie platform na klasy CSS domain-tag
 const PLAT_CLASS = {
@@ -21,7 +18,6 @@ const PLAT_CLASS = {
   'UtrataDochodu.pl':          'd-utrata',
   'Gwarancje.pro':             'd-gwar',
   'Idzik.org.pl':              'd-idzik',
-  // Witryny rozwodowe
   'RozwodWaw.pl':          'd-rwaw',
   'RozwodTarchomin.pl':    'd-rtarch',
   'RozwodOchota.pl':       'd-rochota',
@@ -49,7 +45,6 @@ const HOSTNAME_TO_PLATFORM = {
   'www.gwarancje.pro':            'Gwarancje.pro',
   'idzik.org.pl':                 'Idzik.org.pl',
   'www.idzik.org.pl':             'Idzik.org.pl',
-  // Witryny rozwodowe
   'rozwod.waw.pl':              'RozwodWaw.pl',
   'www.rozwod.waw.pl':          'RozwodWaw.pl',
   'rozwodtarchomin.pl':         'RozwodTarchomin.pl',
@@ -77,27 +72,6 @@ const HOSTNAME_TO_PLATFORM = {
 function getCurrentPlatform() {
   return HOSTNAME_TO_PLATFORM[window.location.hostname] || null;
 }
-
-const ALL_PLATFORMS = [
-  { id: 'plat_aurabenefits',   value: 'AuraBenefits' },
-  { id: 'plat_auraconsulting', value: 'AuraConsulting.pl' },
-  { id: 'plat_grupowe',        value: 'Grupowe.pro' },
-  { id: 'plat_utratadochodu',  value: 'UtrataDochodu.pl' },
-  { id: 'plat_gwarancje',      value: 'Gwarancje.pro' },
-  { id: 'plat_idzik',          value: 'Idzik.org.pl' },
-  // Witryny rozwodowe
-  { id: 'plat_rwaw',    value: 'RozwodWaw.pl' },
-  { id: 'plat_rtarch',  value: 'RozwodTarchomin.pl' },
-  { id: 'plat_rochota', value: 'RozwodOchota.pl' },
-  { id: 'plat_rzolibz', value: 'RozwodZoliborz.pl' },
-  { id: 'plat_rbielan', value: 'RozwodBielany.pl' },
-  { id: 'plat_rlegion', value: 'RozwodLegionowo.pl' },
-  { id: 'plat_rmokot',  value: 'RozwodMokotow.pl' },
-  { id: 'plat_rlomian', value: 'RozwodLomianki.pl' },
-  { id: 'plat_rwola',   value: 'RozwodWola.pl' },
-  { id: 'plat_rbemowo', value: 'RozwodBemowo.pl' },
-  { id: 'plat_rjablon', value: 'RozwodJablonna.pl' },
-];
 
 const PAGE_TITLES = {
   blog:      'Baza Wiedzy HR',
@@ -311,205 +285,6 @@ function initThemeToggle() {
 
 
 // =============================================================================
-//  SUPABASE STORAGE — upload zdjęć
-// =============================================================================
-async function uploadImageToSupabase(file) {
-  const ext = ((file.name || 'image').split('.').pop() || 'jpg')
-    .toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-  const filename = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${ext}`;
-
-  setAutoSaveIndicator('saving', 'Wgrywanie zdjęcia...');
-
-  const { error } = await SB_CLIENT.storage
-    .from('article-images')
-    .upload(filename, file, { contentType: file.type, upsert: false });
-
-  if (error) {
-    setAutoSaveIndicator('error', '⚠ Błąd uploadu: ' + error.message);
-    setTimeout(hideAutoSaveIndicator, 4000);
-    return null;
-  }
-
-  const { data: { publicUrl } } = SB_CLIENT.storage
-    .from('article-images')
-    .getPublicUrl(filename);
-
-  setAutoSaveIndicator('saved', '✓ Zdjęcie wgrane');
-  setTimeout(hideAutoSaveIndicator, 2000);
-  return publicUrl;
-}
-
-
-// =============================================================================
-//  TIPTAP — inicjalizacja
-// =============================================================================
-function initTiptap() {
-  const { Editor, StarterKit, Image, Link, Underline, Placeholder, Youtube } = window.Tiptap;
-
-  tiptapInstance = new Editor({
-    element: document.querySelector('#tiptapEditor'),
-    extensions: [
-      StarterKit,
-      Image,
-      Link.configure({ openOnClick: false }),
-      Underline,
-      Placeholder.configure({ placeholder: 'Zacznij pisać swój artykuł tutaj...' }),
-      Youtube,
-    ],
-    content: '',
-    onUpdate: () => {
-      editorDirty = true;
-      updateTiptapToolbar();
-    },
-    onSelectionUpdate: () => {
-      updateTiptapToolbar();
-    },
-  });
-
-  // Paste — przechwytuje obrazy ze schowka i wgrywa do Supabase Storage
-  tiptapInstance.view.dom.addEventListener('paste', async (e) => {
-    const items = (e.clipboardData || window.clipboardData)?.items;
-    if (!items) return;
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        const url = await uploadImageToSupabase(file);
-        if (url) tiptapInstance.chain().focus().setImage({ src: url }).run();
-        return;
-      }
-    }
-  });
-}
-
-function tiptapCmd(cmd, args) {
-  if (!tiptapInstance) return;
-  const chain = tiptapInstance.chain().focus();
-  if (args) chain[cmd](args).run();
-  else chain[cmd]().run();
-}
-
-function tiptapSetLink() {
-  if (!tiptapInstance) return;
-  const prev = tiptapInstance.getAttributes('link').href || '';
-  const url  = prompt('Wpisz URL linku:', prev);
-  if (url === null) return;
-  if (url === '') tiptapInstance.chain().focus().unsetLink().run();
-  else tiptapInstance.chain().focus().setLink({ href: url }).run();
-}
-
-function tiptapInsertImage() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = async () => {
-    const file = input.files[0];
-    if (!file) return;
-    const url = await uploadImageToSupabase(file);
-    if (url) tiptapInstance.chain().focus().setImage({ src: url }).run();
-  };
-  input.click();
-}
-
-function tiptapInsertYoutube() {
-  const url = prompt('Wpisz URL YouTube:');
-  if (!url) return;
-  tiptapInstance.chain().focus().setYoutubeVideo({ src: url }).run();
-}
-
-function tiptapClearFormat() {
-  if (!tiptapInstance) return;
-  tiptapInstance.chain().focus().clearNodes().unsetAllMarks().run();
-}
-
-function updateTiptapToolbar() {
-  if (!tiptapInstance) return;
-  document.querySelectorAll('#tiptapToolbar .tb-btn[data-active-check]').forEach(btn => {
-    try {
-      const parsed = JSON.parse(btn.dataset.activeCheck);
-      const name   = parsed[0];
-      const attrs  = parsed[1] || {};
-      btn.classList.toggle('is-active', tiptapInstance.isActive(name, attrs));
-    } catch (_) {}
-  });
-}
-
-
-// =============================================================================
-//  EDYTOR — fullscreen, auto-save
-// =============================================================================
-function toggleEditorFullscreen() {
-  const modal = document.querySelector('#modal-article .modal');
-  const icon  = document.querySelector('#btn-fullscreen-editor i');
-  const isFs  = modal.classList.toggle('modal-fullscreen');
-  if (icon) {
-    icon.setAttribute('data-lucide', isFs ? 'minimize-2' : 'maximize-2');
-    lucide.createIcons();
-  }
-}
-
-function setAutoSaveIndicator(state, text) {
-  const el = document.getElementById('autosaveIndicator');
-  if (!el) return;
-  el.className = `autosave-indicator ${state}`;
-  el.textContent = text;
-}
-
-function hideAutoSaveIndicator() {
-  const el = document.getElementById('autosaveIndicator');
-  if (el) el.classList.add('hidden');
-}
-
-function startAutoSave() {
-  editorDirty = false;
-  clearInterval(autoSaveTimer);
-  autoSaveTimer = setInterval(runAutoSave, 30000);
-}
-
-function stopAutoSave() {
-  clearInterval(autoSaveTimer);
-  autoSaveTimer = null;
-  hideAutoSaveIndicator();
-}
-
-async function runAutoSave() {
-  if (!editorDirty) return;
-  const id = document.getElementById('cmsId').value;
-  if (!id) return;
-
-  const title = document.getElementById('cmsTitle').value.trim();
-  if (!title) return;
-
-  setAutoSaveIndicator('saving', 'Automatyczne zapisywanie...');
-
-  const contentHtml  = tiptapInstance.getHTML();
-  const excerpt      = document.getElementById('cmsExcerpt').value.trim();
-  const tagsStr         = document.getElementById('cmsTags').value.trim();
-  const tags            = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
-  const thumbnailUrl    = document.getElementById('cmsThumbnail').value.trim();
-  const previewImageUrl = document.getElementById('cmsPreviewImageUrl').value.trim();
-
-  const platforms       = ALL_PLATFORMS
-    .filter(p => document.getElementById(p.id).checked)
-    .map(p => p.value);
-
-  const { error } = await SB_CLIENT.from('aura_articles').update({
-    title, excerpt, content: contentHtml, tags, platforms,
-    thumbnail_url: thumbnailUrl || null,
-    preview_image_url: previewImageUrl || null,
-  }).eq('id', id);
-
-  if (!error) {
-    editorDirty = false;
-    setAutoSaveIndicator('saved', '✓ Automatycznie zapisano');
-    setTimeout(hideAutoSaveIndicator, 3000);
-  } else {
-    setAutoSaveIndicator('error', '⚠ Błąd auto-zapisu');
-  }
-}
-
-
-// =============================================================================
 //  DASHBOARD — KPI + ostatnie artykuły
 // =============================================================================
 async function loadDashboard() {
@@ -571,7 +346,6 @@ async function openArticle(id, skipHashChange = false) {
     return;
   }
 
-  // Inkrementuj licznik wyświetleń (nie czekaj na wynik)
   SB_CLIENT.rpc('increment_article_views', { article_id: id });
 
   document.getElementById('amTitle').textContent = data.title;
@@ -712,7 +486,7 @@ async function loadAdminArticles() {
         <button class="btn-icon" onclick="openArticle('${safeId}')" title="Podgląd">
           <i data-lucide="eye" width="15" height="15"></i>
         </button>
-        <button class="btn-icon" onclick="editArticleInCms('${safeId}')" title="Edytuj">
+        <button class="btn-icon" onclick="openArticleWindow('${safeId}')" title="Edytuj">
           <i data-lucide="edit" width="15" height="15"></i>
         </button>
         ${unpublishBtn}
@@ -728,102 +502,12 @@ async function loadAdminArticles() {
 
 
 // =============================================================================
-//  CMS MODAL — otwieranie / edycja
+//  EDYTOR ARTYKUŁÓW — osobne okno
 // =============================================================================
-function openNewArticleModal() {
-  if (currentRole !== 'admin') return;
-
-  document.getElementById('cmsModalTitle').textContent = 'Tworzenie Nowego Artykułu';
-  document.getElementById('cmsId').value        = '';
-  document.getElementById('cmsTitle').value     = '';
-  document.getElementById('cmsExcerpt').value   = '';
-  document.getElementById('cmsTags').value      = '';
-  document.getElementById('cmsThumbnail').value = '';
-  document.getElementById('thumbPreview').classList.add('hidden');
-  document.getElementById('thumbPreview').style.backgroundImage = '';
-  document.getElementById('cmsPreviewImageUrl').value = '';
-  document.getElementById('cmsPreviewImageFile').value = '';
-  showPreviewImgThumb('');
-
-  ALL_PLATFORMS.forEach(p => {
-    document.getElementById(p.id).checked = (p.value === 'AuraBenefits');
-  });
-
-  tiptapInstance.commands.setContent('');
-  openModal('modal-article');
-  startAutoSave();
-}
-
-async function editArticleInCms(id) {
-  if (currentRole !== 'admin') return;
-
-  const { data } = await SB_CLIENT.from('aura_articles').select('*').eq('id', id).single();
-  if (!data) return;
-
-  document.getElementById('cmsModalTitle').textContent = 'Edycja Artykułu';
-  document.getElementById('cmsId').value        = id;
-  document.getElementById('cmsTitle').value     = data.title;
-  document.getElementById('cmsExcerpt').value   = data.excerpt || '';
-  document.getElementById('cmsTags').value      = (data.tags || []).join(', ');
-  document.getElementById('cmsThumbnail').value = data.thumbnail_url || '';
-  previewThumbnail(data.thumbnail_url || '');
-  document.getElementById('cmsPreviewImageUrl').value = data.preview_image_url || '';
-  document.getElementById('cmsPreviewImageFile').value = '';
-  showPreviewImgThumb(data.preview_image_url || '');
-
-  const platforms = data.platforms || ['AuraBenefits'];
-  ALL_PLATFORMS.forEach(p => {
-    document.getElementById(p.id).checked = platforms.includes(p.value);
-  });
-
-  tiptapInstance.commands.setContent(data.content || '');
-  openModal('modal-article');
-  startAutoSave();
-}
-
-async function saveArticle(desiredStatus) {
-  if (currentRole !== 'admin') { alert('Brak uprawnień.'); return; }
-
-  const id           = document.getElementById('cmsId').value;
-  const title        = document.getElementById('cmsTitle').value.trim();
-  const excerpt      = document.getElementById('cmsExcerpt').value.trim();
-  const tagsStr      = document.getElementById('cmsTags').value.trim();
-  const contentHtml  = tiptapInstance.getHTML();
-  const thumbnailUrl    = document.getElementById('cmsThumbnail').value.trim();
-  const previewImageUrl = document.getElementById('cmsPreviewImageUrl').value.trim();
-
-  const platforms = ALL_PLATFORMS
-    .filter(p => document.getElementById(p.id).checked)
-    .map(p => p.value);
-
-  if (!platforms.length)          return alert('Wybierz przynajmniej jedno miejsce publikacji.');
-  if (!title)                     return alert('Podaj tytuł artykułu.');
-  if (tiptapInstance.isEmpty)     return alert('Artykuł nie może być pusty.');
-
-  const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
-
-  const payload = {
-    title, excerpt, content: contentHtml,
-    tags, platforms,
-    thumbnail_url: thumbnailUrl || null,
-    preview_image_url: previewImageUrl || null,
-    status: desiredStatus,
-    ai_generated: false,
-  };
-  if (desiredStatus === 'published') payload.published_at = new Date().toISOString();
-
-  const { error } = id
-    ? await SB_CLIENT.from('aura_articles').update(payload).eq('id', id)
-    : await SB_CLIENT.from('aura_articles').insert([payload]);
-
-  if (!error) {
-    editorDirty = false;
-    closeModal('modal-article');
-    alert(desiredStatus === 'published' ? 'Artykuł opublikowany!' : 'Szkic zapisany.');
-    loadAdminArticles();
-  } else {
-    alert('Błąd zapisu: ' + error.message);
-  }
+function openArticleWindow(id) {
+  if (currentRole !== 'admin') { showLoginScreen(); return; }
+  const url = id ? `article.html?id=${encodeURIComponent(id)}` : 'article.html';
+  window.open(url, '_blank');
 }
 
 async function unpublishArticle(id) {
@@ -837,47 +521,6 @@ async function deleteArticle(id) {
   if (!confirm('Na pewno usunąć ten artykuł bezpowrotnie?')) return;
   await SB_CLIENT.from('aura_articles').delete().eq('id', id);
   loadAdminArticles();
-}
-
-function previewThumbnail(url) {
-  const el = document.getElementById('thumbPreview');
-  const thumb = youtubeThumbnail(url);
-  if (thumb) {
-    el.style.backgroundImage = `url('${thumb}')`;
-    el.classList.remove('hidden');
-  } else {
-    el.style.backgroundImage = '';
-    el.classList.add('hidden');
-  }
-}
-
-async function handlePreviewImageUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const url = await uploadImageToSupabase(file);
-  if (!url) return;
-  document.getElementById('cmsPreviewImageUrl').value = url;
-  showPreviewImgThumb(url);
-}
-
-function showPreviewImgThumb(url) {
-  const el       = document.getElementById('previewImgThumb');
-  const clearBtn = document.getElementById('previewImgClear');
-  if (url) {
-    el.style.backgroundImage = `url('${url}')`;
-    el.classList.remove('hidden');
-    clearBtn.style.display = '';
-  } else {
-    el.style.backgroundImage = '';
-    el.classList.add('hidden');
-    clearBtn.style.display = 'none';
-  }
-}
-
-function clearPreviewImage() {
-  document.getElementById('cmsPreviewImageUrl').value = '';
-  document.getElementById('cmsPreviewImageFile').value = '';
-  showPreviewImgThumb('');
 }
 
 
@@ -923,20 +566,10 @@ async function loadAnalytics() {
 
 
 // =============================================================================
-//  MODALS — generyczne
+//  MODALS — social media, użytkownicy
 // =============================================================================
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-  if (id === 'modal-article') {
-    stopAutoSave();
-    // Wyjdź z fullscreen jeśli był aktywny
-    const modal = document.querySelector('#modal-article .modal');
-    if (modal) modal.classList.remove('modal-fullscreen');
-    const icon = document.querySelector('#btn-fullscreen-editor i');
-    if (icon) { icon.setAttribute('data-lucide', 'maximize-2'); lucide.createIcons(); }
-  }
-}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
 
 // =============================================================================
@@ -945,7 +578,6 @@ function closeModal(id) {
 window.onload = async () => {
   lucide.createIcons();
   initThemeToggle();
-  initTiptap();
 
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', e => {
