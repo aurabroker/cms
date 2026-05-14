@@ -569,6 +569,22 @@
       </div>
 
       <div class="form-field">
+        <label class="form-label">Zdjęcie na liście artykułów (własne)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <label class="btn btn-ghost btn-sm preview-img-btn">
+            Wybierz plik…
+            <input type="file" id="cmsPreviewImageFile" accept="image/*"
+                   style="display:none" onchange="handlePreviewImageUpload(this)">
+          </label>
+          <div id="previewImgThumb" class="thumb-preview hidden"></div>
+          <button type="button" id="previewImgClear" class="btn btn-ghost btn-sm"
+                  onclick="clearPreviewImage()" style="display:none">✕ Usuń</button>
+        </div>
+        <input type="hidden" id="cmsPreviewImageUrl">
+        <p class="form-hint">Własne zdjęcie zastępuje miniaturkę YouTube na karcie bloga.</p>
+      </div>
+
+      <div class="form-field">
         <label class="form-label">Treść główna</label>
         <div class="tiptap-wrap">
           <div class="tiptap-toolbar" id="tiptapToolbar">

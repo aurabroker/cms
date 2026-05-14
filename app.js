@@ -484,16 +484,19 @@ async function runAutoSave() {
 
   const contentHtml  = tiptapInstance.getHTML();
   const excerpt      = document.getElementById('cmsExcerpt').value.trim();
-  const tagsStr      = document.getElementById('cmsTags').value.trim();
-  const tags         = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
-  const thumbnailUrl = document.getElementById('cmsThumbnail').value.trim();
-  const platforms    = ALL_PLATFORMS
+  const tagsStr         = document.getElementById('cmsTags').value.trim();
+  const tags            = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const thumbnailUrl    = document.getElementById('cmsThumbnail').value.trim();
+  const previewImageUrl = document.getElementById('cmsPreviewImageUrl').value.trim();
+
+  const platforms       = ALL_PLATFORMS
     .filter(p => document.getElementById(p.id).checked)
     .map(p => p.value);
 
   const { error } = await SB_CLIENT.from('aura_articles').update({
     title, excerpt, content: contentHtml, tags, platforms,
     thumbnail_url: thumbnailUrl || null,
+    preview_image_url: previewImageUrl || null,
   }).eq('id', id);
 
   if (!error) {
@@ -607,7 +610,7 @@ async function loadPublishedArticles() {
   const platform = getCurrentPlatform();
   let query = SB_CLIENT
     .from('aura_articles')
-    .select('id, title, excerpt, tags, published_at, thumbnail_url')
+    .select('id, title, excerpt, tags, published_at, thumbnail_url, preview_image_url')
     .eq('status', 'published')
     .order('published_at', { ascending: false });
 
@@ -626,7 +629,7 @@ async function loadPublishedArticles() {
   }
 
   grid.innerHTML = data.map(art => {
-    const thumb = youtubeThumbnail(art.thumbnail_url);
+    const thumb = youtubeThumbnail(art.thumbnail_url) || art.preview_image_url || null;
     const thumbHtml = thumb
       ? `<div class="blog-card-thumb" style="background-image:url('${thumb}')">
            <div class="blog-card-thumb-overlay"></div>
@@ -738,6 +741,9 @@ function openNewArticleModal() {
   document.getElementById('cmsThumbnail').value = '';
   document.getElementById('thumbPreview').classList.add('hidden');
   document.getElementById('thumbPreview').style.backgroundImage = '';
+  document.getElementById('cmsPreviewImageUrl').value = '';
+  document.getElementById('cmsPreviewImageFile').value = '';
+  showPreviewImgThumb('');
 
   ALL_PLATFORMS.forEach(p => {
     document.getElementById(p.id).checked = (p.value === 'AuraBenefits');
@@ -761,6 +767,9 @@ async function editArticleInCms(id) {
   document.getElementById('cmsTags').value      = (data.tags || []).join(', ');
   document.getElementById('cmsThumbnail').value = data.thumbnail_url || '';
   previewThumbnail(data.thumbnail_url || '');
+  document.getElementById('cmsPreviewImageUrl').value = data.preview_image_url || '';
+  document.getElementById('cmsPreviewImageFile').value = '';
+  showPreviewImgThumb(data.preview_image_url || '');
 
   const platforms = data.platforms || ['AuraBenefits'];
   ALL_PLATFORMS.forEach(p => {
@@ -796,6 +805,7 @@ async function saveArticle(desiredStatus) {
     title, excerpt, content: contentHtml,
     tags, platforms,
     thumbnail_url: thumbnailUrl || null,
+    preview_image_url: previewImageUrl || null,
     status: desiredStatus,
     ai_generated: false,
   };
@@ -838,6 +848,35 @@ function previewThumbnail(url) {
     el.style.backgroundImage = '';
     el.classList.add('hidden');
   }
+}
+
+async function handlePreviewImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const url = await uploadImageToSupabase(file);
+  if (!url) return;
+  document.getElementById('cmsPreviewImageUrl').value = url;
+  showPreviewImgThumb(url);
+}
+
+function showPreviewImgThumb(url) {
+  const el       = document.getElementById('previewImgThumb');
+  const clearBtn = document.getElementById('previewImgClear');
+  if (url) {
+    el.style.backgroundImage = `url('${url}')`;
+    el.classList.remove('hidden');
+    clearBtn.style.display = '';
+  } else {
+    el.style.backgroundImage = '';
+    el.classList.add('hidden');
+    clearBtn.style.display = 'none';
+  }
+}
+
+function clearPreviewImage() {
+  document.getElementById('cmsPreviewImageUrl').value = '';
+  document.getElementById('cmsPreviewImageFile').value = '';
+  showPreviewImgThumb('');
 }
 
 

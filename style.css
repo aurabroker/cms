@@ -431,6 +431,11 @@ button { font-family: inherit; }
 }
 .thumb-preview.hidden { display: none; }
 
+.preview-img-btn {
+  cursor: pointer;
+  display: inline-flex; align-items: center;
+}
+
 
 /* ── MODALS ──────────────────────────────────────────────────────────────── */
 .modal-overlay {
