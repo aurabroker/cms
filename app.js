@@ -789,7 +789,8 @@ async function saveArticle(desiredStatus) {
   const excerpt      = document.getElementById('cmsExcerpt').value.trim();
   const tagsStr      = document.getElementById('cmsTags').value.trim();
   const contentHtml  = tiptapInstance.getHTML();
-  const thumbnailUrl = document.getElementById('cmsThumbnail').value.trim();
+  const thumbnailUrl    = document.getElementById('cmsThumbnail').value.trim();
+  const previewImageUrl = document.getElementById('cmsPreviewImageUrl').value.trim();
 
   const platforms = ALL_PLATFORMS
     .filter(p => document.getElementById(p.id).checked)
