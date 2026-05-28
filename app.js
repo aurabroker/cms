@@ -78,12 +78,13 @@ const PAGE_TITLES = {
   article:   'Artykuł',
   dashboard: 'Pulpit',
   articles:  'Artykuły',
+  reviews:   'Opinie klientów',
   social:    'Social Media',
   analytics: 'Analityka',
   users:     'Użytkownicy',
 };
 
-const ADMIN_PAGES = ['dashboard', 'articles', 'social', 'analytics', 'users'];
+const ADMIN_PAGES = ['dashboard', 'articles', 'reviews', 'social', 'analytics', 'users'];
 
 
 // =============================================================================
@@ -261,6 +262,7 @@ function navTo(page, skipHash = false) {
   if (page === 'blog')      loadPublishedArticles();
   if (page === 'dashboard') loadDashboard();
   if (page === 'articles')  loadAdminArticles();
+  if (page === 'reviews')   loadReviews();
   if (page === 'analytics') loadAnalytics();
 
   if (!skipHash) history.pushState(null, null, '#' + page);
@@ -581,6 +583,126 @@ async function loadAnalytics() {
       <td>${badge}</td>
     </tr>`;
   }).join('');
+}
+
+
+// =============================================================================
+//  OPINIE — div_review
+// =============================================================================
+let _reviewsCache = [];
+
+async function loadReviews() {
+  if (currentRole !== 'admin') return;
+
+  const tbody = document.getElementById('reviewsList');
+  tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Ładowanie...</td></tr>`;
+
+  let query = SB_CLIENT.from('div_review').select('*').order('created_at', { ascending: false });
+
+  const filterStatus = document.getElementById('filterReviewStatus')?.value;
+  if (filterStatus === 'approved') query = query.eq('approved', true);
+  if (filterStatus === 'pending')  query = query.eq('approved', false);
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state empty-state-error">Błąd: ${escapeHtml(error?.message || '')}</td></tr>`;
+    return;
+  }
+
+  _reviewsCache = data;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Brak opinii spełniających kryteria.</td></tr>`;
+    return;
+  }
+
+  const stars = n => '★'.repeat(n) + '☆'.repeat(5 - n);
+
+  tbody.innerHTML = data.map(r => {
+    const safeId  = escapeHtml(String(r.id));
+    const badge   = r.approved
+      ? '<span class="badge badge-success">Zatwierdzone</span>'
+      : '<span class="badge badge-warning">Oczekuje</span>';
+    const toggleBtn = r.approved
+      ? `<button class="btn-icon" onclick="setReviewApproval('${safeId}',false)" title="Cofnij zatwierdzenie">
+           <i data-lucide="eye-off" width="15" height="15"></i>
+         </button>`
+      : `<button class="btn-icon" onclick="setReviewApproval('${safeId}',true)" title="Zatwierdź i opublikuj">
+           <i data-lucide="check-circle" width="15" height="15"></i>
+         </button>`;
+
+    return `<tr>
+      <td>
+        <strong>${escapeHtml(r.name)}</strong><br>
+        <span class="td-meta">${escapeHtml(r.city)}${r.zawod ? ' · ' + escapeHtml(r.zawod) : ''}</span>
+      </td>
+      <td style="color:var(--color-warning);letter-spacing:1px">${stars(r.rating)}</td>
+      <td class="td-truncate" style="max-width:220px">${escapeHtml(r.comment || '—')}</td>
+      <td><span style="font-size:11px;font-family:monospace">${escapeHtml(r.platform)}</span></td>
+      <td>${new Date(r.created_at).toLocaleDateString('pl-PL')}</td>
+      <td>${badge}</td>
+      <td class="td-actions">
+        ${toggleBtn}
+        <button class="btn-icon" onclick="openEditReview('${safeId}')" title="Edytuj">
+          <i data-lucide="edit" width="15" height="15"></i>
+        </button>
+        <button class="btn-icon btn-icon-danger" onclick="deleteReview('${safeId}')" title="Usuń">
+          <i data-lucide="trash-2" width="15" height="15"></i>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+async function setReviewApproval(id, approved) {
+  if (currentRole !== 'admin') return;
+  const { error } = await SB_CLIENT.from('div_review').update({ approved }).eq('id', id);
+  if (error) { alert('Błąd: ' + error.message); return; }
+  loadReviews();
+}
+
+async function deleteReview(id) {
+  if (currentRole !== 'admin') return;
+  if (!confirm('Usunąć tę opinię bezpowrotnie?')) return;
+  const { error } = await SB_CLIENT.from('div_review').delete().eq('id', id);
+  if (error) { alert('Błąd: ' + error.message); return; }
+  loadReviews();
+}
+
+function openEditReview(id) {
+  const r = _reviewsCache.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('editReviewId').value      = r.id;
+  document.getElementById('editReviewName').value    = r.name;
+  document.getElementById('editReviewCity').value    = r.city;
+  document.getElementById('editReviewZawod').value   = r.zawod || '';
+  document.getElementById('editReviewRating').value  = String(r.rating);
+  document.getElementById('editReviewComment').value = r.comment || '';
+  openModal('modal-review-edit');
+}
+
+async function saveReview() {
+  if (currentRole !== 'admin') return;
+  const id      = document.getElementById('editReviewId').value;
+  const name    = document.getElementById('editReviewName').value.trim();
+  const city    = document.getElementById('editReviewCity').value.trim();
+  const zawod   = document.getElementById('editReviewZawod').value.trim() || null;
+  const rating  = parseInt(document.getElementById('editReviewRating').value, 10);
+  const comment = document.getElementById('editReviewComment').value.trim() || null;
+
+  if (!name || !city) { alert('Imię i miasto są wymagane.'); return; }
+
+  const { error } = await SB_CLIENT
+    .from('div_review')
+    .update({ name, city, zawod, rating, comment })
+    .eq('id', id);
+
+  if (error) { alert('Błąd: ' + error.message); return; }
+  closeModal('modal-review-edit');
+  loadReviews();
 }
 
 

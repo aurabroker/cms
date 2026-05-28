@@ -82,6 +82,9 @@
       <button class="nav-item" data-page="articles" onclick="navTo('articles')">
         <i data-lucide="file-text" width="17" height="17"></i> Artykuły
       </button>
+      <button class="nav-item" data-page="reviews" onclick="navTo('reviews')">
+        <i data-lucide="star" width="17" height="17"></i> Opinie klientów
+      </button>
       <button class="nav-item" data-page="social" onclick="navTo('social')">
         <i data-lucide="share-2" width="17" height="17"></i> Social Media
       </button>
@@ -287,6 +290,49 @@
             </thead>
             <tbody id="adminArticlesList">
               <tr><td colspan="5" class="empty-state">Ładowanie artykułów...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <!-- PAGE: OPINIE KLIENTÓW                                                -->
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+      <div class="page" id="page-reviews">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Opinie klientów</h1>
+            <p class="page-subtitle">Moderuj opinie z formularza — zatwierdź do publikacji, edytuj lub usuń.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select class="form-select filter-select" id="filterReviewStatus" onchange="loadReviews()">
+                <option value="">Wszystkie statusy</option>
+                <option value="pending">Oczekujące</option>
+                <option value="approved">Zatwierdzone</option>
+              </select>
+            </div>
+            <button onclick="loadReviews()" class="btn btn-ghost btn-sm">
+              <i data-lucide="refresh-cw" width="14" height="14"></i> Odśwież
+            </button>
+          </div>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Imię / Miasto / Zawód</th>
+                <th>Ocena</th>
+                <th>Komentarz</th>
+                <th>Platforma</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Akcje</th>
+              </tr>
+            </thead>
+            <tbody id="reviewsList">
+              <tr><td colspan="7" class="empty-state">Ładowanie opinii...</td></tr>
             </tbody>
           </table>
         </div>
@@ -599,6 +645,57 @@
       <button class="btn btn-ghost" onclick="closeModal('modal-user')">Anuluj</button>
       <button class="btn btn-primary">
         <i data-lucide="user-plus" width="15" height="15"></i> Utwórz konto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: EDYTUJ OPINIĘ ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-review-edit">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Edytuj opinię</h2>
+      <button class="btn-icon" onclick="closeModal('modal-review-edit')">
+        <i data-lucide="x" width="18" height="18"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editReviewId">
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Imię</label>
+          <input class="form-input" id="editReviewName" type="text" placeholder="Jan Kowalski">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Miasto</label>
+          <input class="form-input" id="editReviewCity" type="text" placeholder="Warszawa">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Zawód <span class="form-hint-inline">(opcjonalnie)</span></label>
+          <input class="form-input" id="editReviewZawod" type="text" placeholder="np. Adwokat">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Ocena</label>
+          <select class="form-select" id="editReviewRating">
+            <option value="5">★★★★★  5/5</option>
+            <option value="4">★★★★☆  4/5</option>
+            <option value="3">★★★☆☆  3/5</option>
+            <option value="2">★★☆☆☆  2/5</option>
+            <option value="1">★☆☆☆☆  1/5</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Komentarz <span class="form-hint-inline">(opcjonalnie)</span></label>
+        <textarea class="form-textarea" id="editReviewComment" rows="4" placeholder="Treść opinii..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer modal-footer-right">
+      <button class="btn btn-ghost" onclick="closeModal('modal-review-edit')">Anuluj</button>
+      <button class="btn btn-primary" onclick="saveReview()">
+        <i data-lucide="save" width="15" height="15"></i> Zapisz zmiany
       </button>
     </div>
   </div>
