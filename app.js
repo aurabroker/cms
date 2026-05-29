@@ -84,6 +84,12 @@ const PAGE_TITLES = {
   users:     'Użytkownicy',
 };
 
+const REVIEW_TABLES = {
+  div_review:   { label: 'Kancelaria',    hasZawod: true  },
+  ud_review:    { label: 'UtrataDochodu', hasZawod: true  },
+  aura_reviews: { label: 'Grupowe.pro',   hasZawod: false },
+};
+
 const ADMIN_PAGES = ['dashboard', 'articles', 'reviews', 'social', 'analytics', 'users'];
 
 
@@ -236,6 +242,7 @@ function showApp() {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('loginError').classList.add('hidden');
   document.getElementById('appContainer').classList.remove('hidden');
+  loadReviewCounts();
 }
 
 
@@ -262,7 +269,7 @@ function navTo(page, skipHash = false) {
   if (page === 'blog')      loadPublishedArticles();
   if (page === 'dashboard') loadDashboard();
   if (page === 'articles')  loadAdminArticles();
-  if (page === 'reviews')   loadReviews();
+  if (page === 'reviews')   { loadReviews(); loadReviewCounts(); }
   if (page === 'analytics') loadAnalytics();
 
   if (!skipHash) history.pushState(null, null, '#' + page);
@@ -587,17 +594,45 @@ async function loadAnalytics() {
 
 
 // =============================================================================
-//  OPINIE — div_review
+//  OPINIE — div_review / ud_review / aura_reviews
 // =============================================================================
 let _reviewsCache = [];
+let currentReviewTable = 'div_review';
+
+function navToReviews(table) {
+  currentReviewTable = table;
+  navTo('reviews');
+  // navTo clears all active states — re-mark the correct sub-item
+  document.querySelectorAll('[data-review-table]').forEach(el =>
+    el.classList.toggle('active', el.dataset.reviewTable === table)
+  );
+}
+
+async function loadReviewCounts() {
+  if (currentRole !== 'admin') return;
+  const [{ count: c1 }, { count: c2 }, { count: c3 }] = await Promise.all([
+    SB_CLIENT.from('div_review').select('id', { count: 'exact', head: true }),
+    SB_CLIENT.from('ud_review').select('id', { count: 'exact', head: true }),
+    SB_CLIENT.from('aura_reviews').select('id', { count: 'exact', head: true }),
+  ]);
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? 0; };
+  set('count-div-review',   c1);
+  set('count-ud-review',    c2);
+  set('count-aura-reviews', c3);
+}
 
 async function loadReviews() {
   if (currentRole !== 'admin') return;
 
+  const meta  = REVIEW_TABLES[currentReviewTable] || REVIEW_TABLES.div_review;
   const tbody = document.getElementById('reviewsList');
   tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Ładowanie...</td></tr>`;
 
-  let query = SB_CLIENT.from('div_review').select('*').order('created_at', { ascending: false });
+  // Update page title
+  const titleEl = document.getElementById('reviewsPageTitle');
+  if (titleEl) titleEl.textContent = `Opinie — ${meta.label}`;
+
+  let query = SB_CLIENT.from(currentReviewTable).select('*').order('created_at', { ascending: false });
 
   const filterStatus = document.getElementById('filterReviewStatus')?.value;
   if (filterStatus === 'approved') query = query.eq('approved', true);
@@ -612,6 +647,25 @@ async function loadReviews() {
 
   _reviewsCache = data;
 
+  // ── Stats bar (always computed on ALL rows, ignoring status filter)
+  let allQuery = SB_CLIENT.from(currentReviewTable).select('rating,approved');
+  const { data: allData } = await allQuery;
+  if (allData) {
+    const total    = allData.length;
+    const approved = allData.filter(r => r.approved).length;
+    const pending  = total - approved;
+    const avg      = total ? (allData.reduce((s, r) => s + r.rating, 0) / total) : 0;
+    const stars    = n => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('statTotal',    total);
+    set('statApproved', approved);
+    set('statPending',  pending);
+    set('statAvg',      avg ? avg.toFixed(1) + ' / 5' : '—');
+    const starsEl = document.getElementById('statStars');
+    if (starsEl) starsEl.textContent = avg ? stars(avg) : '';
+  }
+
   if (data.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Brak opinii spełniających kryteria.</td></tr>`;
     return;
@@ -620,8 +674,8 @@ async function loadReviews() {
   const stars = n => '★'.repeat(n) + '☆'.repeat(5 - n);
 
   tbody.innerHTML = data.map(r => {
-    const safeId  = escapeHtml(String(r.id));
-    const badge   = r.approved
+    const safeId = escapeHtml(String(r.id));
+    const badge  = r.approved
       ? '<span class="badge badge-success">Zatwierdzone</span>'
       : '<span class="badge badge-warning">Oczekuje</span>';
     const toggleBtn = r.approved
@@ -631,11 +685,12 @@ async function loadReviews() {
       : `<button class="btn-icon" onclick="setReviewApproval('${safeId}',true)" title="Zatwierdź i opublikuj">
            <i data-lucide="check-circle" width="15" height="15"></i>
          </button>`;
+    const zawodPart = meta.hasZawod && r.zawod ? ' · ' + escapeHtml(r.zawod) : '';
 
     return `<tr>
       <td>
         <strong>${escapeHtml(r.name)}</strong><br>
-        <span class="td-meta">${escapeHtml(r.city)}${r.zawod ? ' · ' + escapeHtml(r.zawod) : ''}</span>
+        <span class="td-meta">${escapeHtml(r.city)}${zawodPart}</span>
       </td>
       <td style="color:var(--color-warning);letter-spacing:1px">${stars(r.rating)}</td>
       <td class="td-truncate" style="max-width:220px">${escapeHtml(r.comment || '—')}</td>
@@ -659,28 +714,34 @@ async function loadReviews() {
 
 async function setReviewApproval(id, approved) {
   if (currentRole !== 'admin') return;
-  const { error } = await SB_CLIENT.from('div_review').update({ approved }).eq('id', id);
+  const { error } = await SB_CLIENT.from(currentReviewTable).update({ approved }).eq('id', id);
   if (error) { alert('Błąd: ' + error.message); return; }
   loadReviews();
+  loadReviewCounts();
 }
 
 async function deleteReview(id) {
   if (currentRole !== 'admin') return;
   if (!confirm('Usunąć tę opinię bezpowrotnie?')) return;
-  const { error } = await SB_CLIENT.from('div_review').delete().eq('id', id);
+  const { error } = await SB_CLIENT.from(currentReviewTable).delete().eq('id', id);
   if (error) { alert('Błąd: ' + error.message); return; }
   loadReviews();
+  loadReviewCounts();
 }
 
 function openEditReview(id) {
   const r = _reviewsCache.find(x => x.id === id);
   if (!r) return;
+  const meta = REVIEW_TABLES[currentReviewTable];
   document.getElementById('editReviewId').value      = r.id;
   document.getElementById('editReviewName').value    = r.name;
   document.getElementById('editReviewCity').value    = r.city;
   document.getElementById('editReviewZawod').value   = r.zawod || '';
   document.getElementById('editReviewRating').value  = String(r.rating);
   document.getElementById('editReviewComment').value = r.comment || '';
+  // Hide zawod field if table doesn't have it
+  const zawodRow = document.getElementById('editReviewZawod')?.closest('.form-field');
+  if (zawodRow) zawodRow.style.display = meta?.hasZawod ? '' : 'none';
   openModal('modal-review-edit');
 }
 
@@ -689,17 +750,18 @@ async function saveReview() {
   const id      = document.getElementById('editReviewId').value;
   const name    = document.getElementById('editReviewName').value.trim();
   const city    = document.getElementById('editReviewCity').value.trim();
-  const zawod   = document.getElementById('editReviewZawod').value.trim() || null;
   const rating  = parseInt(document.getElementById('editReviewRating').value, 10);
   const comment = document.getElementById('editReviewComment').value.trim() || null;
 
   if (!name || !city) { alert('Imię i miasto są wymagane.'); return; }
 
-  const { error } = await SB_CLIENT
-    .from('div_review')
-    .update({ name, city, zawod, rating, comment })
-    .eq('id', id);
+  const payload = { name, city, rating, comment };
+  const meta = REVIEW_TABLES[currentReviewTable];
+  if (meta?.hasZawod) {
+    payload.zawod = document.getElementById('editReviewZawod').value.trim() || null;
+  }
 
+  const { error } = await SB_CLIENT.from(currentReviewTable).update(payload).eq('id', id);
   if (error) { alert('Błąd: ' + error.message); return; }
   closeModal('modal-review-edit');
   loadReviews();

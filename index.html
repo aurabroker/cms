@@ -82,9 +82,6 @@
       <button class="nav-item" data-page="articles" onclick="navTo('articles')">
         <i data-lucide="file-text" width="17" height="17"></i> Artykuły
       </button>
-      <button class="nav-item" data-page="reviews" onclick="navTo('reviews')">
-        <i data-lucide="star" width="17" height="17"></i> Opinie klientów
-      </button>
       <button class="nav-item" data-page="social" onclick="navTo('social')">
         <i data-lucide="share-2" width="17" height="17"></i> Social Media
       </button>
@@ -97,6 +94,22 @@
       <div class="nav-label">System</div>
       <button class="nav-item" data-page="users" onclick="navTo('users')">
         <i data-lucide="users" width="17" height="17"></i> Użytkownicy
+      </button>
+    </div>
+
+    <div class="nav-section admin-only hidden nav-section-reviews">
+      <div class="nav-label">Opinie klientów</div>
+      <button class="nav-item" data-review-table="div_review" onclick="navToReviews('div_review')">
+        <i data-lucide="scale" width="17" height="17"></i> Kancelaria
+        <span class="nav-item-count" id="count-div-review">…</span>
+      </button>
+      <button class="nav-item" data-review-table="ud_review" onclick="navToReviews('ud_review')">
+        <i data-lucide="briefcase" width="17" height="17"></i> UtrataDochodu
+        <span class="nav-item-count" id="count-ud-review">…</span>
+      </button>
+      <button class="nav-item" data-review-table="aura_reviews" onclick="navToReviews('aura_reviews')">
+        <i data-lucide="users-2" width="17" height="17"></i> Grupowe.pro
+        <span class="nav-item-count" id="count-aura-reviews">…</span>
       </button>
     </div>
 
@@ -301,8 +314,28 @@
       <div class="page" id="page-reviews">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Opinie klientów</h1>
+            <h1 class="page-title" id="reviewsPageTitle">Opinie klientów</h1>
             <p class="page-subtitle">Moderuj opinie z formularza — zatwierdź do publikacji, edytuj lub usuń.</p>
+          </div>
+        </div>
+
+        <div class="reviews-stats" id="reviewsStats">
+          <div class="reviews-stat">
+            <span class="reviews-stat-label">Łącznie</span>
+            <span class="reviews-stat-value" id="statTotal">—</span>
+          </div>
+          <div class="reviews-stat">
+            <span class="reviews-stat-label">Zatwierdzone</span>
+            <span class="reviews-stat-value" id="statApproved">—</span>
+          </div>
+          <div class="reviews-stat">
+            <span class="reviews-stat-label">Oczekujące</span>
+            <span class="reviews-stat-value" id="statPending">—</span>
+          </div>
+          <div class="reviews-stat">
+            <span class="reviews-stat-label">Średnia ocena</span>
+            <span class="reviews-stat-stars" id="statStars"></span>
+            <span class="reviews-stat-value" id="statAvg">—</span>
           </div>
         </div>
 
@@ -319,7 +352,7 @@
               <i data-lucide="refresh-cw" width="14" height="14"></i> Odśwież
             </button>
           </div>
-          <table class="tbl">
+          <table class="tbl tbl-reviews">
             <thead>
               <tr>
                 <th>Imię / Miasto / Zawód</th>
