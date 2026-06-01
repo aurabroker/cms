@@ -5,9 +5,10 @@ const SB_URL = 'https://kukvgsjrmrqtzhkszzum.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a3Znc2pybXJxdHpoa3N6enVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTI0NzYsImV4cCI6MjA4ODQ4ODQ3Nn0.wOB-4CJTcRksSUY7WD7CXEccTKNxPIVF8AT8hczS5zY';
 const SB_CLIENT = supabase.createClient(SB_URL, SB_KEY);
 
-let tiptapInstance = null;
-let autoSaveTimer  = null;
-let editorDirty    = false;
+let tiptapInstance     = null;
+let autoSaveTimer      = null;
+let editorDirty        = false;
+let slugManuallyEdited = false;
 
 const ALL_PLATFORMS = [
   { id: 'plat_aurabenefits',   value: 'AuraBenefits' },
@@ -40,6 +41,28 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
     if (!allowed.some(d => src.includes(d))) node.removeAttribute('src');
   }
 });
+
+function generateSlug(title) {
+  const map = {
+    'ą':'a','ć':'c','ę':'e','ł':'l','ń':'n','ó':'o','ś':'s','ź':'z','ż':'z',
+    'Ą':'a','Ć':'c','Ę':'e','Ł':'l','Ń':'n','Ó':'o','Ś':'s','Ź':'z','Ż':'z',
+  };
+  return String(title || '')
+    .replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, c => map[c] || c)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+function sanitizeSlug(raw) {
+  return String(raw || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
 
 function escapeHtml(str) {
   return String(str || '')
@@ -247,10 +270,13 @@ async function runAutoSave() {
     .filter(p => document.getElementById(p.id).checked)
     .map(p => p.value);
 
+  const slug = sanitizeSlug(document.getElementById('cmsSlug').value) || null;
+
   const { error } = await SB_CLIENT.from('aura_articles').update({
     title, excerpt, content: contentHtml, tags, platforms,
     thumbnail_url: thumbnailUrl || null,
     preview_image_url: previewImageUrl || null,
+    slug,
   }).eq('id', id);
 
   if (!error) {
@@ -329,10 +355,11 @@ async function saveArticle(desiredStatus) {
   if (tiptapInstance.isEmpty) return alert('Artykuł nie może być pusty.');
 
   const tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(Boolean) : [];
+  const slug = sanitizeSlug(document.getElementById('cmsSlug').value) || null;
 
   const payload = {
     title, excerpt, content: contentHtml,
-    tags, platforms,
+    tags, platforms, slug,
     thumbnail_url: thumbnailUrl || null,
     preview_image_url: previewImageUrl || null,
     status: desiredStatus,
@@ -414,6 +441,8 @@ async function bootEditor() {
     document.getElementById('cmsExcerpt').value   = data.excerpt || '';
     document.getElementById('cmsTags').value      = (data.tags || []).join(', ');
     document.getElementById('cmsThumbnail').value = data.thumbnail_url || '';
+    document.getElementById('cmsSlug').value      = data.slug || '';
+    if (data.slug) slugManuallyEdited = true;
     previewThumbnail(data.thumbnail_url || '');
     document.getElementById('cmsPreviewImageUrl').value = data.preview_image_url || '';
     showPreviewImgThumb(data.preview_image_url || '');
@@ -429,6 +458,22 @@ async function bootEditor() {
     document.title = 'Nowy Artykuł — AuraHUB CMS';
     document.getElementById('plat_aurabenefits').checked = true;
   }
+
+  const titleInput = document.getElementById('cmsTitle');
+  const slugInput  = document.getElementById('cmsSlug');
+
+  titleInput.addEventListener('input', () => {
+    if (!slugManuallyEdited) {
+      slugInput.value = generateSlug(titleInput.value);
+    }
+  });
+  slugInput.addEventListener('input', () => {
+    if (slugInput.value === '') {
+      slugManuallyEdited = false;
+    } else {
+      slugManuallyEdited = true;
+    }
+  });
 
   startAutoSave();
 

@@ -357,16 +357,26 @@ async function loadDashboard() {
 // =============================================================================
 //  CZYTNIK ARTYKUŁÓW
 // =============================================================================
-async function openArticle(id, skipHashChange = false) {
-  let query = SB_CLIENT.from('aura_articles').select('*').eq('id', id);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  if (currentRole !== 'admin') {
-    query = query.eq('status', 'published');
-    const platform = getCurrentPlatform();
-    if (platform) query = query.contains('platforms', [platform]);
+async function openArticle(identifier, skipHashChange = false) {
+  const isUUID = UUID_RE.test(identifier);
+
+  async function queryArticle(field, value) {
+    let q = SB_CLIENT.from('aura_articles').select('*').eq(field, value);
+    if (currentRole !== 'admin') {
+      q = q.eq('status', 'published');
+      const platform = getCurrentPlatform();
+      if (platform) q = q.contains('platforms', [platform]);
+    }
+    return q.single();
   }
 
-  const { data, error } = await query.single();
+  let { data, error } = await queryArticle(isUUID ? 'id' : 'slug', identifier);
+
+  if ((!data || error) && !isUUID) {
+    ({ data, error } = await queryArticle('id', identifier));
+  }
 
   if (!data || error) {
     alert('Nie znaleziono artykułu.');
@@ -374,7 +384,7 @@ async function openArticle(id, skipHashChange = false) {
     return;
   }
 
-  SB_CLIENT.rpc('increment_article_views', { article_id: id });
+  SB_CLIENT.rpc('increment_article_views', { article_id: data.id });
 
   document.getElementById('amTitle').textContent = data.title;
   document.getElementById('amDate').textContent  =
@@ -390,7 +400,7 @@ async function openArticle(id, skipHashChange = false) {
   document.getElementById('topbarTitle').textContent = 'Artykuł';
 
   window.scrollTo(0, 0);
-  if (!skipHashChange) history.pushState(null, null, '#article-' + id);
+  if (!skipHashChange) history.pushState(null, null, '#article-' + (data.slug || data.id));
 }
 
 function closeArticle() { navTo('blog'); }
@@ -412,7 +422,7 @@ async function loadPublishedArticles() {
   const platform = getCurrentPlatform();
   let query = SB_CLIENT
     .from('aura_articles')
-    .select('id, title, excerpt, tags, published_at, thumbnail_url, preview_image_url')
+    .select('id, slug, title, excerpt, tags, published_at, thumbnail_url, preview_image_url')
     .eq('status', 'published')
     .order('published_at', { ascending: false });
 
@@ -445,7 +455,7 @@ async function loadPublishedArticles() {
       : '');
 
     return `
-      <div class="blog-card" onclick="openArticle('${escapeHtml(String(art.id))}')">
+      <div class="blog-card" onclick="openArticle('${escapeHtml(String(art.slug || art.id))}')">
         ${thumbHtml}
         <div class="blog-card-body">
           <div class="blog-card-tags">${tagsHtml}</div>
@@ -502,10 +512,14 @@ async function loadAdminArticles() {
          </button>`
       : '';
 
+    const slugMeta = art.slug
+      ? `<span class="td-meta" style="font-family:monospace;color:var(--color-text-faint)">${escapeHtml(art.slug)}</span>`
+      : `<span class="td-meta" style="color:var(--color-warning)">brak sluga</span>`;
+
     return `<tr>
       <td>
         <strong>${escapeHtml(art.title)}</strong><br>
-        <span class="td-meta">${escapeHtml((art.excerpt || '').slice(0, 80))}${(art.excerpt || '').length > 80 ? '…' : ''}</span>
+        ${slugMeta}
       </td>
       <td>${plats}</td>
       <td>${badge}</td>
