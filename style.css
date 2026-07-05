@@ -24,6 +24,7 @@
   --c-utrata:    #d97706;
   --c-idzik:     #8b5cf6;
   --c-grupowe:   #3b82f6;
+  --c-zarzad:    #334155;
   /* Witryny rozwodowe */
   --c-rwaw:    #1d4ed8;
   --c-rtarch:  #dc2626;
@@ -323,6 +324,7 @@ button { font-family: inherit; }
 .d-utrata    { background: rgba(217, 119, 6,   0.1);  color: var(--c-utrata); }
 .d-idzik     { background: rgba(139, 92,  246, 0.1);  color: var(--c-idzik); }
 .d-grupowe   { background: rgba(59,  130, 246, 0.1);  color: var(--c-grupowe); }
+.d-zarzad    { background: rgba(51,  65,  85,  0.1);  color: var(--c-zarzad); }
 /* Witryny rozwodowe */
 .d-rwaw    { background: rgba(29,  78,  216, 0.1);  color: var(--c-rwaw); }
 .d-rtarch  { background: rgba(220, 38,  38,  0.1);  color: var(--c-rtarch); }

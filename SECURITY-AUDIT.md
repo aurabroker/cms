@@ -16,6 +16,29 @@ zbyt luźne, przez co dane osobowe klientów są dziś dostępne publicznie.
 
 **Rotacja klucza anon NIE naprawi tych luk — trzeba poprawić reguły RLS.**
 
+## Status wdrożenia (2026-07-05)
+
+**✅ Wdrożone** (migracje Supabase `cms_security_storage_and_review_moderation`,
+`close_anon_pii_apk_forms_tokens_ud_offers` — szczegóły w `db/security-hardening.sql`):
+
+- S-04 — usunięto anonimowy upload do bucketu `article-images`.
+- S-05 — zablokowano publikację opinii z pominięciem moderacji (3 tabele).
+- S-01 / S-02 — usunięto publiczny (anon) odczyt `apk_forms` i `apk_tokens`; dodano
+  bezpieczny odczyt „po tokenie" (RPC `apk_form_by_token`).
+- S-03 — usunięto blankietowy odczyt `ud_offers`; dodano RPC `ud_offer_by_token`.
+
+> Uwaga: publiczne strony „podgląd formularza APK z linku" i „oferta z linku"
+> (osobne repozytoria) powinny przełączyć się na wywołanie RPC — szczegóły w
+> `db/security-hardening.sql`.
+
+**⚠️ Do koordynacji z właścicielem aplikacji APK** (nie zmieniano, by nie zepsuć
+aktywnego publicznego formularza APK): `apk_forms_select_auth` (każdy zalogowany
+czyta wszystkie formularze), `apk_forms_update_anon` / `apk_tokens_update_anon`
+(anon może modyfikować szkice / nieużyte tokeny i odczytać je przez `UPDATE ... RETURNING`),
+`*_insert_*` z `WITH CHECK true` (spam). Rekomendacje w `db/security-hardening.sql`.
+
+**Pozostałe** (S-06…S-13, F-01…F-06) — bez zmian, do zaplanowania.
+
 ## Ustalenia — bezpieczeństwo
 
 | ID | Waga | Ustalenie | Gdzie |

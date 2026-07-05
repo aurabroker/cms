@@ -80,6 +80,15 @@ Artykuł można przypisać do jednej lub wielu domen:
 | `UtrataDochodu.pl` | utratadochodu.pl |
 | `Gwarancje.pro` | gwarancje.pro |
 | `Idzik.org.pl` | idzik.org.pl |
+| `Zarzad` | zarzad.auraconsulting.pl |
+
+> Publikacja obejmuje też witryny rozwodowe (`RozwodWaw.pl`, `RozwodTarchomin.pl`, …) —
+> pełna lista w `article.js` (`ALL_PLATFORMS`) i `app.js` (`HOSTNAME_TO_PLATFORM`).
+>
+> **Dodanie nowej domeny** wymaga wpisu w `HOSTNAME_TO_PLATFORM` (`app.js`) — inaczej
+> `getCurrentPlatform()` zwróci `null`, a blog pokaże **wszystkie** artykuły zamiast
+> tylko przypisanych do tej domeny. Domena musi też być skierowana na tę samą
+> aplikację (Cloudflare → Workers & Pages → projekt `cms` → Domains/Routes).
 
 ---
 

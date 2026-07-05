@@ -16,6 +16,7 @@ const ALL_PLATFORMS = [
   { id: 'plat_utratadochodu',  value: 'UtrataDochodu.pl' },
   { id: 'plat_gwarancje',      value: 'Gwarancje.pro' },
   { id: 'plat_idzik',          value: 'Idzik.org.pl' },
+  { id: 'plat_zarzad',         value: 'Zarzad' },
   { id: 'plat_rwaw',    value: 'RozwodWaw.pl' },
   { id: 'plat_rtarch',  value: 'RozwodTarchomin.pl' },
   { id: 'plat_rochota', value: 'RozwodOchota.pl' },
