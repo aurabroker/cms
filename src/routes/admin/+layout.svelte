@@ -4,9 +4,8 @@
 		BookOpen,
 		LayoutDashboard,
 		FileText,
-		Share2,
+		Globe,
 		BarChart2,
-		Users,
 		Scale,
 		Briefcase,
 		Users2,
@@ -26,7 +25,8 @@
 	const nav = [
 		{ href: '/admin', label: 'Pulpit', icon: LayoutDashboard },
 		{ href: '/admin/artykuly', label: 'Artykuły', icon: FileText },
-		{ href: '/admin/analityka', label: 'Analityka', icon: BarChart2 }
+		{ href: '/admin/analityka', label: 'Analityka', icon: BarChart2 },
+		{ href: '/admin/platformy', label: 'Platformy', icon: Globe }
 	];
 
 	function isActive(href: string): boolean {
@@ -40,6 +40,7 @@
 		if (p.startsWith('/admin/artykuly')) return 'Artykuły';
 		if (p.startsWith('/admin/opinie')) return 'Opinie klientów';
 		if (p.startsWith('/admin/analityka')) return 'Analityka';
+		if (p.startsWith('/admin/platformy')) return 'Platformy';
 		return 'Pulpit';
 	});
 </script>

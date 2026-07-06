@@ -1,13 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import { Plus, Eye, Edit, EyeOff, Trash2 } from '@lucide/svelte';
 	import PlatformBadge from '$components/PlatformBadge.svelte';
-	import { PLATFORMS } from '$lib/platforms';
+	import type { Platform } from '$lib/platforms';
 	import { formatDate } from '$lib/util';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const platformList = $derived((page.data.platforms ?? []) as Platform[]);
 
 	function applyFilters(patch: { status?: string; platform?: string }) {
 		const params = new URLSearchParams();
@@ -40,7 +43,7 @@
 				onchange={(e) => applyFilters({ platform: e.currentTarget.value })}
 			>
 				<option value="">Wszystkie platformy</option>
-				{#each PLATFORMS as p}
+				{#each platformList as p}
 					<option value={p.value}>{p.label}</option>
 				{/each}
 			</select>

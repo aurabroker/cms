@@ -1,4 +1,5 @@
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
+import type { Platform } from '$lib/platforms';
 
 declare global {
 	namespace App {
@@ -10,7 +11,9 @@ declare global {
 			role: string | null;
 		}
 		interface PageData {
-			session: Session | null;
+			session?: Session | null;
+			platforms?: Platform[];
+			currentPlatform?: string | null;
 		}
 		// interface Error {}
 		interface Platform {

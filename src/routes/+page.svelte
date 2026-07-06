@@ -6,10 +6,10 @@
 
 	let { data }: { data: PageData } = $props();
 
-	const brandName = $derived(data.platform?.label ?? 'AuraHUB');
+	const brandName = $derived(data.platformLabel ?? 'AuraHUB');
 	const pageTitle = $derived(`Baza Wiedzy — ${brandName}`);
 	const metaDesc = $derived(
-		`Artykuły, porady i aktualności${data.platform ? ' — ' + data.platform.label : ''}. Baza wiedzy Aura Group.`
+		`Artykuły, porady i aktualności${data.platformLabel ? ' — ' + data.platformLabel : ''}. Baza wiedzy Aura Group.`
 	);
 </script>
 
@@ -39,7 +39,7 @@
 	<main class="public-main">
 		<h1 class="page-title">Baza Wiedzy</h1>
 		<p class="page-subtitle">
-			Artykuły, porady i trendy{data.platform ? ` — ${data.platform.label}` : ''}.
+			Artykuły, porady i trendy{data.platformLabel ? ` — ${data.platformLabel}` : ''}.
 		</p>
 
 		{#if data.loadError}

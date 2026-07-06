@@ -1,8 +1,10 @@
-import { platformFromHost } from '$lib/platforms';
+import { loadPlatforms } from '$lib/server/platforms';
+import { resolvePlatform } from '$lib/platforms';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals, url, setHeaders }) => {
-	const platformValue = platformFromHost(url.host);
+	const platforms = await loadPlatforms(locals.supabase);
+	const platformValue = resolvePlatform(url.host, platforms)?.value ?? null;
 
 	let q = locals.supabase
 		.from('aura_articles')

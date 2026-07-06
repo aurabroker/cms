@@ -31,7 +31,8 @@ src/
 ├── hooks.server.ts        # Supabase SSR (sesja w cookie) + guard /admin
 ├── lib/
 │   ├── config.ts          # URL + anon key Supabase (publiczny)
-│   ├── platforms.ts        # Domeny: Host → platforma (multi-tenant, źródło prawdy)
+│   ├── platforms.ts        # Typy + resolver + fallback (źródło prawdy: tabela cms_platforms)
+│   ├── server/platforms.ts # Ładowanie platform z bazy (cache 60 s)
 │   ├── types.ts           # Typy tabel + konfiguracja tabel opinii
 │   ├── supabaseClient.ts  # Klient przeglądarkowy (upload, zapis)
 │   ├── sanitize.client.ts # DOMPurify przy zapisie treści
@@ -46,7 +47,8 @@ src/
         ├── +page.svelte          # Pulpit (KPI)
         ├── artykuly/            # Tabela + edytor (/edytor/[[id]])
         ├── opinie/[table]/      # Moderacja: div_review / ud_review / aura_reviews
-        └── analityka/           # Top artykuły wg wyświetleń
+        ├── analityka/           # Top artykuły wg wyświetleń
+        └── platformy/           # Zarządzanie domenami (CRUD, bez zmian w kodzie)
 ```
 
 ---
@@ -59,8 +61,11 @@ nagłówek `Host` żądania na wartość platformy (np. `utratadochodu.pl` →
 serwera i filtrują po `platforms @> [platforma]`. Nieznany host (np. domena
 panelu, localhost) pokazuje wszystkie opublikowane artykuły.
 
-Aby dodać domenę: dopisz wpis do `PLATFORMS` w `src/lib/platforms.ts` i podłącz
-domenę do Workera w panelu Cloudflare.
+Platformy dodaje się z panelu **/admin/platformy** (tabela `cms_platforms`) —
+bez zmian w kodzie. Nowa platforma od razu pojawia się w edytorze, filtrach
+i badge'ach (kolor znacznika ustawiasz w panelu). Ostatni krok to podłączenie
+domeny do Workera w panelu Cloudflare. `src/lib/platforms.ts` zawiera już tylko
+typy, resolver i awaryjny fallback.
 
 ---
 
@@ -71,6 +76,7 @@ domenę do Workera w panelu Cloudflare.
 - `aura_articles` — artykuły (m.in. `slug` używany do SEO-friendly URLi).
 - `profiles` — role; dostęp do panelu ma `rola = 'admin'`.
 - `div_review`, `ud_review`, `aura_reviews` — opinie (moderacja).
+- `cms_platforms` — platformy/domeny zarządzane z panelu (patrz `supabase/migrations`).
 - Storage bucket `article-images` — zdjęcia z edytora.
 - RPC `increment_article_views` — licznik odsłon (wywoływany z czytnika).
 

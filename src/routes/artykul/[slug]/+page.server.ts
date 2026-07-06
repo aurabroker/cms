@@ -1,13 +1,12 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { isUuid } from '$lib/util';
-import { platformFromHost } from '$lib/platforms';
 
 export const load: PageServerLoad = async (event) => {
 	const { params, locals, url, setHeaders } = event;
 	const key = params.slug;
 	const isAdmin = locals.role === 'admin';
-	const platformValue = platformFromHost(url.host);
+	const { currentPlatform: platformValue } = await event.parent();
 
 	let query = locals.supabase.from('aura_articles').select('*');
 	query = isUuid(key) ? query.eq('id', key) : query.eq('slug', key);

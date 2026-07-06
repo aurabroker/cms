@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { X, Save, Send } from '@lucide/svelte';
 	import Editor from '$components/Editor.svelte';
-	import { PLATFORMS } from '$lib/platforms';
+	import { DEFAULT_PLATFORMS, type Platform } from '$lib/platforms';
 	import { supabaseBrowser } from '$lib/supabaseClient';
 	import { STORAGE_BUCKET } from '$lib/config';
 	import { sanitizeHtml } from '$lib/sanitize.client';
@@ -22,9 +23,11 @@
 	let thumbnail = $state(article?.thumbnail_url ?? '');
 	let previewImageUrl = $state(article?.preview_image_url ?? '');
 
-	const platforms = $state<Record<string, boolean>>(
+	const platformList = (page.data.platforms ?? DEFAULT_PLATFORMS) as Platform[];
+
+	const platformChecks = $state<Record<string, boolean>>(
 		Object.fromEntries(
-			PLATFORMS.map((p) => [
+			platformList.map((p) => [
 				p.value,
 				article ? (article.platforms ?? []).includes(p.value) : p.value === 'AuraBenefits'
 			])
@@ -86,7 +89,7 @@
 
 	// ── Zapis ─────────────────────────────────────────────────────────────────
 	function selectedPlatforms(): string[] {
-		return PLATFORMS.filter((p) => platforms[p.value]).map((p) => p.value);
+		return platformList.filter((p) => platformChecks[p.value]).map((p) => p.value);
 	}
 
 	async function buildPayload(desiredStatus?: 'draft' | 'published') {
@@ -241,9 +244,9 @@
 <div class="form-field">
 	<span class="form-label">Miejsca publikacji</span>
 	<div style="display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:6px">
-		{#each PLATFORMS as p}
+		{#each platformList as p}
 			<label style="display:flex;align-items:center;gap:6px;font-size:var(--text-sm)">
-				<input type="checkbox" bind:checked={platforms[p.value]} onchange={markDirty} />
+				<input type="checkbox" bind:checked={platformChecks[p.value]} onchange={markDirty} />
 				{p.label}
 			</label>
 		{/each}

@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { PenTool, BarChart2 } from '@lucide/svelte';
+	import { page } from '$app/state';
 	import PlatformBadge from '$components/PlatformBadge.svelte';
-	import { PLATFORMS } from '$lib/platforms';
 	import { formatDate } from '$lib/util';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const platformCount = $derived(page.data.platforms?.length ?? 0);
 </script>
 
 <svelte:head><title>Pulpit — AuraHUB CMS</title></svelte:head>
@@ -26,7 +28,7 @@
 	</div>
 	<div class="kpi-card">
 		<div class="kpi-label">Aktywne platformy</div>
-		<div class="kpi-value">{PLATFORMS.length}</div>
+		<div class="kpi-value">{platformCount}</div>
 		<div class="kpi-sub">AuraBenefits, Grupowe.pro i inne</div>
 	</div>
 	<div class="kpi-card">
