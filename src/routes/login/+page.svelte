@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { APP_VERSION } from '$lib/version';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -17,7 +18,10 @@
 		<div class="login-brand">
 			<div class="login-logo">A</div>
 			<div>
-				<div class="login-title">AuraHUB <span class="login-cms-label">CMS</span></div>
+				<div class="login-title">
+					AuraHUB <span class="login-cms-label">CMS</span>
+					<span class="brand-version">v{APP_VERSION}</span>
+				</div>
 			</div>
 		</div>
 		<p class="login-hint">Zaloguj się, aby uzyskać dostęp do panelu redaktora.</p>

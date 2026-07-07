@@ -202,7 +202,7 @@ button { font-family: inherit; }
 /* ── CONTENT AREA ────────────────────────────────────────────────────────── */
 .content-area {
   padding: 32px;
-  max-width: 1200px; margin: 0 auto; width: 100%;
+  width: 90%; max-width: none; margin: 0 auto;
 }
 
 .page { display: none; animation: fadeIn 0.25s ease; }
@@ -958,7 +958,20 @@ button { font-family: inherit; }
   padding: 16px 24px; border-bottom: 1px solid var(--color-border);
   background: var(--color-surface); position: sticky; top: 0; z-index: 10;
 }
-.public-main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+.public-main { flex: 1; width: 90%; max-width: none; margin: 0 auto; padding: 32px 24px; }
+
+/* Znacznik wersji przy logo AuraHUB */
+.brand-version {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  letter-spacing: 0.03em;
+  padding: 1px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
 .public-footer {
   border-top: 1px solid var(--color-border); padding: 24px;
   text-align: center; color: var(--color-text-faint); font-size: var(--text-sm);

@@ -3,6 +3,7 @@
 	import ThemeToggle from '$components/ThemeToggle.svelte';
 	import { formatDateTime } from '$lib/util';
 	import { articleThumbnail } from '$lib/youtube';
+	import { APP_VERSION } from '$lib/version';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -33,6 +34,7 @@
 		<a href="/" class="brand" style="text-decoration:none">
 			<div class="brand-logo">A</div>
 			<span>Aura<span class="brand-sub">HUB</span></span>
+			<span class="brand-version">v{APP_VERSION}</span>
 		</a>
 		<div style="display:flex;align-items:center;gap:8px">
 			<ThemeToggle />

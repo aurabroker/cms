@@ -14,6 +14,7 @@
 	} from '@lucide/svelte';
 	import ThemeToggle from '$components/ThemeToggle.svelte';
 	import { REVIEW_TABLES } from '$lib/types';
+	import { APP_VERSION } from '$lib/version';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -50,6 +51,7 @@
 		<a href="/" class="brand" style="cursor:pointer;text-decoration:none">
 			<div class="brand-logo">A</div>
 			<span>Aura<span class="brand-sub">HUB</span></span>
+			<span class="brand-version">v{APP_VERSION}</span>
 		</a>
 
 		<div class="nav-section">
